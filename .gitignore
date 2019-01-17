@@ -6,6 +6,18 @@ __pycache__/
 # C extensions
 *.so
 
+# venv
+venv/
+
+# idea
+.idea/
+
+# pickles folder
+pickles/
+
+# db_config
+*.config
+
 # Distribution / packaging
 .Python
 build/
