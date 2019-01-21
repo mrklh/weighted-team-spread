@@ -1,7 +1,7 @@
 from data_loaders.mine_sql_connection import MySqlConnection
 from data_loaders.sqls import Sqls
 from data_loaders.pickle_loader import PickleLoader
-import pprint
+
 
 class Validator:
     def __init__(self):
@@ -10,13 +10,8 @@ class Validator:
         self.game_dict = {}
         self.pkl_loader = PickleLoader('games.pkl')
 
-    def get_games(self):
+    def get_games_from_db(self):
         self.games = self.pkl_loader.return_data()
-        print '#' * 49
-        print '#' * 49
-        pprint.pprint('alohaaaaaaaaaaaaa')
-        print '#' * 49
-        print '#' * 49
 
         if not self.games:
             print 'NOT FOUND PICKLE GAMES'
