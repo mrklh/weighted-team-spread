@@ -1,18 +1,35 @@
+from plotters.matrix_plotter import MatrixPlotter
 import pprint
 
 
 class ClosenessAnalyzer:
-    def __init__(self, game_data):
-        self.team_matrix = None
-        self.team_matrices = []
-        self.game_data = game_data
+    def __init__(self, analyzer):
+        self.analyzer = analyzer
+        self.p2p_dicts = []
+        self.closeness_matrices = None
         self.tim_dict = {}
-        self.create_team_matrices()
+
+        self.create_p2p_dicts()
         self.generate_tim_dict()
-        self.generate_closeness_dicts()
+        self.generate_closeness_matrices()
 
     def generate_tim_dict(self):
-        for team in self.game_data:
+        '''
+        Generates
+        
+        {
+            time : {
+                hasball_team_id : id
+                players : {
+                    player1 : {
+                        x, y
+                    }            
+                } 
+            }
+        }
+        :return: 
+        '''
+        for team in self.analyzer.teams:
             for player_name in team.players:
                 player = team.players[player_name]
                 for sec_data in player.statistics_as_np:
@@ -22,11 +39,11 @@ class ClosenessAnalyzer:
                     self.tim_dict[int(sec_data[0])]['players'][player.name] = \
                         [float(sec_data[4]), float(sec_data[5])]
 
-    def create_team_matrices(self):
-        for team in self.game_data:
-            self.team_matrices.append(team.generate_teammates_matrix())
+    def create_p2p_dicts(self):
+        for team in self.analyzer.teams:
+            self.p2p_dicts.append(team.generate_p2p_dict())
 
-    def range_calculator(self, typ, tim, player1, player2):
+    def range_calculator(self, range_type, tim, player1, player2):
         if self.tim_dict[tim]['players'].get(player1) is None or \
                 self.tim_dict[tim]['players'].get(player2) is None:
             return False
@@ -37,7 +54,7 @@ class ClosenessAnalyzer:
         if not sum(point1) or not sum(point2):
             return False
 
-        if typ:
+        if range_type:
             x = self.is_in_range_off(point1, point2)
             return x
         return self.is_in_range_def(point1, point2)
@@ -54,11 +71,23 @@ class ClosenessAnalyzer:
             return True
         return False
 
-    def generate_closeness_dicts(self):
+    def generate_closeness_matrices(self):
+        '''
+        Generates p2p_dicts
+        
+        []
+        
+        :return: 
+        '''
         for tim in self.tim_dict:
-            for c, team in enumerate(self.team_matrices):
-                range_type = True if self.tim_dict[tim]['hasball_team_id'] == self.game_data[c].id else False
+            for c, team in enumerate(self.p2p_dicts):
+                range_type = True if self.tim_dict[tim]['hasball_team_id'] == self.analyzer.teams[c].id else False
                 for player in team:
                     for friend in team[player]:
                         if self.range_calculator(range_type, tim, player, friend):
                             team[player][friend] += 1
+
+        self.closeness_matrices = [
+            MatrixPlotter.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
+            MatrixPlotter.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
+        ]

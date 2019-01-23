@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import pprint
 import traceback
 
 from data_loaders.get_a_game_data import GameData
@@ -10,47 +11,99 @@ from analyzers.pass_analyzer import PassAnalyzer
 from plotters.matrix_plotter import MatrixPlotter
 from validator import Validator
 from match_statistics import MatchStatistics
+from data_loaders.pickle_loader import PickleLoader
+from data_loaders.db_data_collector import DbDataCollector
+
+class Reporter:
+    def __init__(self, game, nh_x, nh_y, na_x, na_y, mh_w, ma_w):
+        print "######################################"
+        print "######################################"
+        print 'Names', '\t\t', game['home']['name'], '\t\t', game['away']['name']
+        print 'Scores', '\t\t', game['score'][0], '\t\t\t\t', game['score'][2]
+        print 'Norm. Dist', '\t', nh_x, nh_y, '\t\t', na_x, na_y
+        print 'My Dist', '\t', mh_w, '\t\t', ma_w
+        print 'Rates', '\t', mh_w / ma_w, '\t\t', nh_x / na_x
+        print "######################################"
+        print "######################################"
 
 
 class Analyzer:
-    def __init__(self, matrix_plotter):
+    def __init__(self, game_info):
+        # Analyzers
         self.closeness_analyzer = None
         self.marking_analyzer = None
         self.pass_analyzer = None
+
+        # Data collectors
         self.game_data_collector = None
         self.ball_data_collector = None
-        self.game_data = None
-        self.db_data = None
+
+        # Home and away team data holders
+        self.teams = None
         self.team_ids = []
-        self.pass_team_matrices = []
-        self.matrix_plotter = matrix_plotter
+
+        # Position data holder
+        self.game_data = None
+        self.ball_data = None
+
+        self.pass_matrices = []
+
+        # Helper fields
+        self.matrix_plotter = MatrixPlotter()
         self.sec_splitter_index = 0
         self.data_arrays = {}
         self.printed = False
+        self.pickle_loader = PickleLoader("matrix_%s_%s" % (DbDataCollector.get_team_abb(game_info['home']['name']),
+                                                            DbDataCollector.get_team_abb(game_info['away']['name'])))
 
+    class RunFuncWithTimer(object):
+        def __init__(self, tag):
+            self.tag = tag
+            self.pref = "\t"
+            if len(self.tag) <= 6:
+                self.pref = "\t\t"
+
+        def __call__(self, func):
+            def func_wrapper(parent):
+                start = time.time()
+                func(parent)
+                end = time.time()
+                print self.tag, '%s: %.2f secs' % (self.pref, end - start)
+            return func_wrapper
+
+    def get_matrices_pickled(self):
+        return self.pickle_loader.return_data()
+
+    @RunFuncWithTimer('Closeness')
     def calculate_closeness(self):
         self.game_data_collector.get_data(file_name=None)
-        self.closeness_analyzer = ClosenessAnalyzer(self.game_data_collector.db_data)
+        self.set_keys()
         self.game_data = self.game_data_collector.game_data
-        self.db_data = self.game_data_collector.db_data
+        self.teams = self.game_data_collector.db_data
+
+        self.closeness_analyzer = ClosenessAnalyzer(self)
         self.team_ids = [self.game_data_collector.db_data[0].id, self.game_data_collector.db_data[1].id]
 
+    @RunFuncWithTimer('Passes')
     def calculate_passes(self):
         self.ball_data_collector.get_data(file_name=None)
         self.match_collectors_player_names()
-        for team in self.ball_data_collector.db_data:
-            self.pass_analyzer = PassAnalyzer(self.ball_data_collector.ball_data, team)
-            self.pass_analyzer.analyze_data()
-            self.pass_team_matrices.append(self.pass_analyzer.teammate_matrix)
+        self.ball_data = self.ball_data_collector.ball_data
+        self.pass_analyzer = PassAnalyzer(self)
 
+    @RunFuncWithTimer('Marking')
     def calculate_marking(self):
         self.marking_analyzer = MarkingAnalyzer(self.game_data_collector.db_data)
 
+    def set_keys(self):
+        self.home_keys = self.game_data_collector.db_data[0].get_player_names()
+        self.away_keys = self.game_data_collector.db_data[1].get_player_names()
+
     def match_collectors_player_names(self):
-        self.ball_data_collector.db_data[0].set_player_names(self.db_data[0].get_player_names())
-        self.ball_data_collector.db_data[0].set_jersey_numbers(self.db_data[0].get_jersey_numbers())
-        self.ball_data_collector.db_data[1].set_player_names(self.db_data[1].get_player_names())
-        self.ball_data_collector.db_data[1].set_jersey_numbers(self.db_data[1].get_jersey_numbers())
+        self.ball_data_collector.db_data[0].set_player_names(self.teams[0].get_player_names())
+        self.ball_data_collector.db_data[0].set_jersey_numbers(self.teams[0].get_jersey_numbers())
+        self.ball_data_collector.db_data[1].set_player_names(self.teams[1].get_player_names())
+        self.ball_data_collector.db_data[1].set_jersey_numbers(self.teams[1].get_jersey_numbers())
 
     def calculate_average_team_length(self, ms):
         half = 1
@@ -228,32 +281,33 @@ class Analyzer:
             return team_matrix / float(np.amax(team_matrix))
 
         for i in range(2):
-            self.data_arrays['team%d_closeness' % (i+1)] = MatrixPlotter.dict_to_matrix(
-                self.closeness_analyzer.team_matrices[i], self.game_data_collector.db_data[i].get_player_names(), True)
-            self.data_arrays['team%d_passes' % (i + 1)] = MatrixPlotter.dict_to_matrix(
-                self.pass_team_matrices[i], self.game_data_collector.db_data[i].get_player_names(), True)
-            self.data_arrays['team%d_marking' % (i + 1)] = MatrixPlotter.dict_to_matrix(
-                self.marking_analyzer.team_matrices[i], self.game_data_collector.db_data[i].get_player_names(), True)
+            self.data_arrays['team%d_closeness' % (i+1)] = self.closeness_analyzer.closeness_matrices[i]
+            self.data_arrays['team%d_passes' % (i + 1)] = self.pass_analyzer.pass_matrices[i]
+            self.data_arrays['team%d_marking' % (i + 1)] = self.marking_analyzer.marking_matrices[i]
             self.data_arrays['team%d_total_off' % (i + 1)] = \
                 normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_passes' % (i + 1)])
             self.data_arrays['team%d_total_def' % (i + 1)] = \
                 normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_marking' % (i + 1)])
 
+    def save_weights(self):
+        pickled_data = {'home': {}, 'away': {}}
+        pickled_data['home']['closeness'] = analyzer.closeness_analyzer.p2p_dicts[0]
+        pickled_data['home']['pass'] = analyzer.pass_p2p_dicts[0]
+        pickled_data['home']['marking'] = analyzer.marking_analyzer.p2p_dicts[0]
+        pickled_data['away']['closeness'] = analyzer.closeness_analyzer.p2p_dicts[1]
+        pickled_data['away']['pass'] = analyzer.pass_p2p_dicts[1]
+        pickled_data['away']['marking'] = analyzer.marking_analyzer.p2p_dicts[1]
+        self.pickle_loader.dump_data(pickled_data)
 
 if __name__ == "__main__":
     import time
-    import pprint
-    print '#' * 49
-    print '#' * 49
-    pprint.pprint('la sikik')
-    print '#' * 49
-    print '#' * 49
-    a = time.time()
+
+    start = time.time()
     validator = Validator()
-    validator.get_games()
-    print "Get game:", time.time() - a; a = time.time()
+    validator.get_games_from_db()
+    print "Get game\t:", "%.2f secs" % (time.time() - start)
     games = validator.return_games()
-    matrix_plotter = MatrixPlotter()
+
     mine = 0
     nrml = 0
 
@@ -261,35 +315,30 @@ if __name__ == "__main__":
     midway = True
 
     for cnt, game in enumerate(games):
-        analyzer = Analyzer(matrix_plotter)
+        analyzer = Analyzer(games[game])
         ms = MatchStatistics(analyzer)
 
-        a = time.time()
         analyzer.game_data_collector = GameData(get_type='Multiple', game=games[game])
-        print "game data:", time.time() - a; a = time.time()
         analyzer.ball_data_collector = BallData(get_type='Multiple', game=games[game])
-        print "ball data:", time.time() - a; a = time.time()
+
         analyzer.calculate_closeness()
-        print "closeness:", time.time() - a; a = time.time()
         analyzer.calculate_passes()
-        print "passes:", time.time() - a; a = time.time()
         analyzer.calculate_marking()
-        print "marking:", time.time() - a; a = time.time()
 
         # importance_list = []
         # for i in range(0, 2):
         #     players = analyzer.game_data_collector.db_data[i].get_player_names()
-        #     cls = MatrixPlotter.dict_to_matrix(analyzer.closeness_analyzer.team_matrices[i], players)
-        #     mrk = MatrixPlotter.dict_to_matrix(analyzer.marking_analyzer.team_matrices[i], players)
-        #     pss = MatrixPlotter.dict_to_matrix(analyzer.pass_team_matrices[i], players)
+        #     cls = MatrixPlotter.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
+        #     mrk = MatrixPlotter.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
+        #     pss = MatrixPlotter.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
         #
         #     importance = cls + mrk + pss
         #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
 
-        analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.team_matrices[0])
+        analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.closeness_matrices[0])
         analyzer.matrix_plotter.set_keys()
-        analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_team_matrices[0])
-        analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.team_matrices[0])
+        analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.pass_matrices[0])
+        analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.marking_matrices[0])
         # analyzer.matrix_plotter.plot()
         # scatter = PitchScatter(analyzer.game_data_collector.db_data)
         # analyzer.matrix_plotter.set_scatter(scatter)
@@ -301,15 +350,8 @@ if __name__ == "__main__":
             ms.print_ms()
             ms.dist_plotter()
             ms.scenario_plotter(just_home, midway)
-            print "######################################"
-            print "######################################"
-            print 'Names', '\t\t', games[game]['home']['name'], '\t\t', games[game]['away']['name']
-            print 'Scores', '\t\t', games[game]['score'][0], '\t\t\t\t', games[game]['score'][2]
-            print 'Norm. Dist', '\t', nh_x, nh_y, '\t\t', na_x, na_y
-            print 'My Dist', '\t', mh_w, '\t\t', ma_w
-            print 'Rates', '\t', mh_w/ma_w, '\t\t', nh_x/na_x
-            print "######################################"
-            print "######################################"
+
+            Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 
             winner_home = 1
             if int(games[game]['score'].split('-')[0]) < int(games[game]['score'].split('-')[1]):
