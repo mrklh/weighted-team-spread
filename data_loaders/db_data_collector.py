@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pprint
-
 from mine_sql_connection import MySqlConnection
-from pickle_loader import PickleLoader
 from team import Team
 from sqls import Sqls
 

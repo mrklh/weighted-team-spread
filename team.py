@@ -46,7 +46,7 @@ class Team:
     def set_jersey_numbers(self, jersey_numbers):
         self.player_jersey_numbers = jersey_numbers
 
-    def generate_teammates_matrix(self):
+    def generate_p2p_dict(self):
         self.teammates_matrix = {name1: {
             name2: 0 for name2 in self.player_names
         } for name1 in self.player_names}

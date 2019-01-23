@@ -14,11 +14,6 @@ class GameData(DbDataCollector):
         self.events = []
 
     def get_data(self, file_name):
-        print '#' * 49
-        print '#' * 49
-        pprint.pprint('alohaaaaaaaaaaaaaaaaaaaaa')
-        print '#' * 49
-        print '#' * 49
         if self.get_type == 'Single':
             self.pkl_loader = PickleLoader(file_name)
             self.db_data = self.pkl_loader.return_data()
