@@ -6,6 +6,7 @@ import matplotlib.animation as animation
 from scipy.spatial import ConvexHull
 
 from matrix_plotter import MatrixPlotter
+from plot_screen import PlotScreen
 
 
 class ScenarioPlotter:
@@ -42,11 +43,7 @@ class ScenarioPlotter:
         self.coh_im = None
         self.time_text = None
 
-        self.frobenius_plot = None
-        self.my_dist_plot = None
-        self.norm_dist_plot_x = None
-        self.norm_dist_plot_y = None
-        self.convex_plot = None
+        self.plot_screen = PlotScreen()
 
         self.hasball_data = []
 
@@ -173,16 +170,13 @@ class ScenarioPlotter:
         self.dist_ax_r.set_xlim(1, self.min_l/10)
         self.dist_ax_r.set_ylim(22, 31)
 
-        self.frobenius_plot, = self.dist_ax_r.plot([], [], 'y', label='Frob./2')
-        self.my_dist_plot, = self.dist_ax_r.plot([], [], 'r', label='My D.')
-        self.norm_dist_plot_x, = self.dist_ax_l.plot([], [], 'g--', label='X. D.')
-        self.norm_dist_plot_y, = self.dist_ax_l.plot([], [], 'b--', label='Y. D.')
-        self.convex_plot, = self.dist_ax_r.plot([], [], 'k', label='Area/6')
-        plt.legend(handles=[self.frobenius_plot,
-                            self.my_dist_plot,
-                            self.norm_dist_plot_x,
-                            self.norm_dist_plot_y,
-                            self.convex_plot])
+        self.plot_screen.add_plot(self.dist_ax_r, [], [], 'y', label='Frob./2')
+        self.plot_screen.add_plot(self.dist_ax_r, [], [], 'r', label='My D.')
+        self.plot_screen.add_plot(self.dist_ax_l, [], [], 'g--', label='X. D.')
+        self.plot_screen.add_plot(self.dist_ax_l, [], [], 'b--', label='Y. D.')
+        self.plot_screen.add_plot(self.dist_ax_r, [], [], 'k', label='Area/6')
+
+        plt.legend(handles=self.plot_screen.get_plots())
 
     def initialize_animation_variables(self):
         self.initialize_pitch()
@@ -227,7 +221,7 @@ class ScenarioPlotter:
                [self.stats[key] for key in self.stats] + \
                [self.time_text] + \
                [self.cs_im, self.coh_im] + \
-               [self.frobenius_plot, self.my_dist_plot, self.norm_dist_plot_x, self.norm_dist_plot_y, self.convex_plot]
+               self.plot_screen.get_plots()
 
     def init(self):
         for lin in self.lines['home']:
@@ -240,11 +234,7 @@ class ScenarioPlotter:
         for name in self.players['away']:
             name.set_position((0, 0))
 
-        self.frobenius_plot.set_data([], [])
-        self.my_dist_plot.set_data([], [])
-        self.norm_dist_plot_x.set_data([], [])
-        self.norm_dist_plot_y.set_data([], [])
-        self.convex_plot.set_data([], [])
+        self.plot_screen.set_all_data([], [])
 
         self.cs_im.set_array(np.zeros((11, 11)))
         self.coh_im.set_array(np.zeros((11, 11)))
@@ -277,43 +267,6 @@ class ScenarioPlotter:
         self.set_time_text(i/10)
 
     def animate_strength(self, i):
-        # import sys
-        # # Calculating dist matrix
-        # dist_matrix = {}
-        # for p1 in self.names:
-        #     if not dist_matrix.get(p1):
-        #         dist_matrix[p1] = {}
-        #     for p2 in self.names:
-        #         p1_pos = self.home_sec_data[p1][i]
-        #         p2_pos = self.home_sec_data[p2][i]
-        #         dist_matrix[p1][p2] = ((p1_pos[0] - p2_pos[0]) ** 2 + (p1_pos[1] - p2_pos[1]) ** 2) ** 0.5
-        #
-        # dist_m = MatrixPlotter.dict_to_matrix(dist_matrix, self.names, is_normalize=False)
-        # dist_tot = np.sum(dist_m)
-        # wght_m = MatrixPlotter.dict_to_matrix(self.p2p_data[i / 10], self.names, is_normalize=False)
-        # wght_tot = np.sum(wght_m)
-        # dist_m = np.divide(dist_m, dist_tot/wght_tot)
-        # diff_m = np.subtract(dist_m, wght_m)
-        #
-        # diff_def_v = np.vectorize(lambda v: 1 - v)
-        # oneminusw = diff_def_v(wght_m)
-        #
-        # def frob(x, y):
-        #     summ = 0
-        #     for c1, i in enumerate(x):
-        #         for c2, j in enumerate(i):
-        #             summ += j * y[c1][c2]
-        #     return summ
-        # frob_diff = frob(dist_m, self.off_matrix)
-        #
-        # print '#' * 49
-        # print '#' * 49
-        # pprint.pprint(frob_diff)
-        # print '#' * 49
-        # print '#' * 49
-        # # sys.exit(0)
-        #
-        # self.cs_im.set_array(np.subtract(dist_m, wght_m))
         self.cs_im.set_array(MatrixPlotter.dict_to_matrix(self.p2p_data[i / 10], self.names, is_normalize=False))
 
     def animate_cohesive(self, i):
@@ -325,20 +278,11 @@ class ScenarioPlotter:
             self.coh_im.set_array(self.def_matrix)
 
     def animate_dist_plot(self, i):
-        self.frobenius_plot.set_xdata(range(1, i/10+1))
-        self.frobenius_plot.set_ydata([x[0]/2.0 for x in self.sec_dist_data[0:i/10]])
-
-        self.my_dist_plot.set_xdata(range(1, i/10+1))
-        self.my_dist_plot.set_ydata([x[1] for x in self.sec_dist_data[0:i/10]])
-
-        self.norm_dist_plot_x.set_xdata(range(1, i/10+1))
-        self.norm_dist_plot_x.set_ydata([x[4] for x in self.sec_dist_data[0:i/10]])
-
-        self.norm_dist_plot_y.set_xdata(range(1, i/10+1))
-        self.norm_dist_plot_y.set_ydata([x[5] for x in self.sec_dist_data[0:i/10]])
-
-        self.convex_plot.set_xdata(range(1, i/10+1))
-        self.convex_plot.set_ydata(self.convex_areas[0:i/10])
+        self.plot_screen.set_data_by_index(i, 0, [x[0]/2.0 for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 0, [x[1] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 0, [x[4] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 0, [x[5] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 0, self.convex_areas[0:i/10])
 
     def animate(self, i):
         self.animate_pitch(i)
@@ -364,15 +308,3 @@ class ScenarioPlotter:
         # ani.save('pitch.mp4', writer=writer)
         plt.show()
 
-    def get_sec_dist_data(self, ind):
-        return "%.2f - %.2f - %.2f - %.2f" % tuple(self.sec_dist_data[ind])
-
-    def show(self):
-        plt.show()
-
-    def matrix_print(self, matrix, names=None):
-        # print '      ', ''.join(map(lambda x: '{:<6}'.format(x), names))
-        for each in matrix:
-            for each2 in each:
-                print '{:<6}'.format('%.2f' % each2),
-            print '\n'
