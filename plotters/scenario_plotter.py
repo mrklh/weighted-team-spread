@@ -132,8 +132,7 @@ class ScenarioPlotter:
 
     def initialize_strength(self):
         init = np.zeros((11, 11))
-        init[0][0] = -20
-        init[0][1] = 20
+        init[0][0] = 20
 
         self.cs_im = self.mat_strength_ax.imshow(init, cmap='RdBu_r')
         plt.colorbar(self.cs_im, ax=self.mat_strength_ax)
@@ -279,10 +278,10 @@ class ScenarioPlotter:
 
     def animate_dist_plot(self, i):
         self.plot_screen.set_data_by_index(i, 0, [x[0]/2.0 for x in self.sec_dist_data[0:i/10]])
-        self.plot_screen.set_data_by_index(i, 0, [x[1] for x in self.sec_dist_data[0:i/10]])
-        self.plot_screen.set_data_by_index(i, 0, [x[4] for x in self.sec_dist_data[0:i/10]])
-        self.plot_screen.set_data_by_index(i, 0, [x[5] for x in self.sec_dist_data[0:i/10]])
-        self.plot_screen.set_data_by_index(i, 0, self.convex_areas[0:i/10])
+        self.plot_screen.set_data_by_index(i, 1, [x[1] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 2, [x[4] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 3, [x[5] for x in self.sec_dist_data[0:i/10]])
+        self.plot_screen.set_data_by_index(i, 4, self.convex_areas[0:i/10])
 
     def animate(self, i):
         self.animate_pitch(i)
@@ -299,12 +298,11 @@ class ScenarioPlotter:
         self.time_text.set_text('{0:02d}:{1:02d}'.format(minn, sec))
 
     def put_players_on_pitch(self):
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
-
         ani = animation.FuncAnimation(self.fig, self.animate, self.min_l,
                                       interval=100, blit=True, init_func=self.init, repeat_delay=10000)
 
+        # Writer = animation.writers['ffmpeg']
+        # writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
         # ani.save('pitch.mp4', writer=writer)
         plt.show()
 

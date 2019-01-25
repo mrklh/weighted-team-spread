@@ -15,7 +15,7 @@ class Team:
     def set_team_id(self, id):
         self.id = id
 
-    def add_player(self, name, jersey_number=None, formation=None):
+    def add_player(self, name, jersey_number=None):
         self.player_names.append(name)
         self.players[name] = Player(self.id, name)
         if jersey_number:
