@@ -87,7 +87,7 @@ class ClosenessAnalyzer:
                         if self.range_calculator(range_type, tim, player, friend):
                             team[player][friend] += 1
 
-        self.closeness_matrices = [
+        self.analyzer.closeness_matrices = [
             MatrixPlotter.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
             MatrixPlotter.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
         ]

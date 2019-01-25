@@ -33,7 +33,7 @@ class PassAnalyzer:
                 if self.check_conditions(row, self.analyzer.ball_data[cnt+1]):
                     self.add_to_matrix(self.analyzer.teams[c], team, row, self.analyzer.ball_data[cnt+1])
 
-        self.pass_matrices = [
+        self.analyzer.pass_matrices = [
             MatrixPlotter.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
             MatrixPlotter.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
         ]
