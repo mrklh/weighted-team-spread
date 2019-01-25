@@ -1,7 +1,7 @@
 class Sqls:
     GET_GAME_DATA = """
     SELECT r.team_id, half*10000 + minute*100 + second, half, minute, 
-           second, d.X_POS, d.Y_POS, d.JERSEY_NUMBER, d.hasball_team_id, p.name
+           second, d.X_POS, d.Y_POS, d.JERSEY_NUMBER, d.hasball_team_id, r.starting_status, p.name
         FROM tf_match_persecdata d, td_player p, tf_roster r, td_team t1, td_team t2, tf_match m
         WHERE d.team_id != 0 AND
               d.match_id = m.id AND 
@@ -13,7 +13,6 @@ class Sqls:
               t2.name = %s AND
               d.team_id = r.team_id AND
               d.match_id = r.match_id AND
-              r.starting_status = 1 AND
               (d.X_POS != 0 AND d.Y_POS != 0)
         ORDER BY half, minute, second, r.team_id, name
     """
@@ -50,9 +49,8 @@ class Sqls:
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
-              t1.ID = 3 AND
-              t2.ID = 86
-        GROUP BY(p.MATCH_ID) LIMIT 10
+              t1.ID = 3
+        GROUP BY(p.MATCH_ID)
     """
 
     GET_TEAM_LENGTH_DATA = """
@@ -66,7 +64,21 @@ class Sqls:
     """
 
     GET_EVENT_DATA = """
-    select e.HALF, e.MINUTE, e.SECOND, e.JERSEY_IN, e.JERSEY_OUT, d.NAME 
-    from tf_sync_event e, td_sync_dictionary d 
-    where e.MATCH_ID=%s and e.TYPE = d.ID
+    SELECT d.half*10000 + d.minute*100 + d.second, d.TEAM_ID, d.JERSEY_NUMBER, e.ID 
+    FROM tf_tagger_data d, td_tagger_event e
+    WHERE 
+    d.MATCH_ID = %d AND 
+    e.ID = d.EVENT_ID AND
+    (e.ID = 10 or e.ID = 70 or e.ID = 72)
+    """ # TODO using player id instead of jersey number
+
+    GET_SUBS_DATA = """
+    SELECT e.team_id, e.JERSEY_OUT as jout, r1.PLAYER_ID as idout, p1.NAME as nout, 
+        e.JERSEY_IN as jin, r2.PLAYER_ID as idin, p2.NAME as nin
+    FROM tf_sync_event e, tf_roster r1, tf_roster r2, td_player p1, td_player p2
+    WHERE e.match_id = %d and jersey_in != -1 and
+    e.JERSEY_OUT = r1.jersey_number and e.jersey_in = r2.jersey_number
+    and r1.match_id = e.match_id and r2.match_id = e.match_id
+    and r1.team_id = e.team_id and r2.team_id = e.team_id and
+    p1.id = r1.player_id and p2.id = r2.player_id
     """

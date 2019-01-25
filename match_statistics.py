@@ -93,19 +93,40 @@ class MatchStatistics:
         print "////////////////////////////////////////////////////////"
         print "////////////////////////////////////////////////////////"
 
+    def find_beginning_of_attacking_transaction(self, event_start_time):
+        sec_keys = sorted(self.secs_secs.keys())
+
+        print '#' * 50
+        print '#' * 50
+        print len(sec_keys), len(self.analyzer.ball_data)
+        print '#' * 50
+        print '#' * 50
+
+
+    def trace_game_events(self):
+        '''
+        Traces all events and finds if it has continuous series of seconds of 10
+        '''
+        sec_keys = sorted(self.secs_secs.keys())
+
+        for event in self.analyzer.events:
+            continuous = True
+            for i in range(8):
+                if not (event[0] - i) in sec_keys:
+                    continuous = False
+                    continue
+            if continuous:
+                index = 1 if event[1] == self.analyzer.teams[0].id else 3
+                base = self.secs_secs[event[0] - 7]['dists'][index]
+                event_flow = [self.secs_secs[x]['dists'][index] - base for x in range(event[0] - 7, event[0])]
+
+                if not self.analyzer.events_by_type.get(event[-1]):
+                    self.analyzer.events_by_type[event[-1]] = []
+                self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
+
+
     def scenario_plotter(self, just_home, midway):
         sec_list = []
-
-        # print '#' * 49
-        # print '#' * 49
-        # pprint.pprint(self.secs_secs.keys())
-        # print '#' * 49
-        # print '#' * 49
-        # pprint.pprint(self.secs_secs.keys()[95:120])
-        # print '#' * 49
-        # print '#' * 49
-        # rng = [x for x in self.secs_secs.keys()[152:174]]
-
         sec_keys = sorted(self.secs_secs.keys())
 
         rng = [x for x in sec_keys[500:700]]
@@ -124,3 +145,8 @@ class MatchStatistics:
 
     def dist_plotter(self):
         DistTimePlotter({key: self.secs_secs[key]['dists'] for key in self.secs_secs})
+
+    def minus_in_time_hash(self, hash):
+        half = str(hash)[0]
+        min = str(hash)[1:3]
+        return

@@ -14,10 +14,14 @@ from match_statistics import MatchStatistics
 from data_loaders.pickle_loader import PickleLoader
 from data_loaders.db_data_collector import DbDataCollector
 
+
+import matplotlib.pyplot as plt
+
 class Reporter:
     def __init__(self, game, nh_x, nh_y, na_x, na_y, mh_w, ma_w):
         print "######################################"
         print "######################################"
+        print game['id']
         print 'Names', '\t\t', game['home']['name'], '\t\t', game['away']['name']
         print 'Scores', '\t\t', game['score'][0], '\t\t\t\t', game['score'][2]
         print 'Norm. Dist', '\t', nh_x, nh_y, '\t\t', na_x, na_y
@@ -28,11 +32,16 @@ class Reporter:
 
 
 class Analyzer:
-    def __init__(self, game_info):
+    def __init__(self, game_info, game_events_by_type):
         # Analyzers
         self.closeness_analyzer = None
         self.marking_analyzer = None
         self.pass_analyzer = None
+
+        # Analyzed matrices
+        self.closeness_matrices = []
+        self.pass_matrices = []
+        self.marking_matrices = []
 
         # Data collectors
         self.game_data_collector = None
@@ -41,6 +50,7 @@ class Analyzer:
         # Home and away team data holders
         self.teams = None
         self.team_ids = []
+        self.events = []
 
         # Position data holder
         self.game_data = None
@@ -48,7 +58,11 @@ class Analyzer:
 
         self.pass_matrices = []
 
+        # All games events list
+        self.events_by_type = game_events_by_type
+
         # Helper fields
+        self.pickled = False
         self.matrix_plotter = MatrixPlotter()
         self.sec_splitter_index = 0
         self.data_arrays = {}
@@ -72,38 +86,38 @@ class Analyzer:
             return func_wrapper
 
     def get_matrices_pickled(self):
-        return self.pickle_loader.return_data()
+        data = self.pickle_loader.return_data()
+        if not data:
+            return None, None, None
+        else:
+            self.pickled = True
+            return data['closeness'], data['pass'], data['marking']
 
     @RunFuncWithTimer('Closeness')
     def calculate_closeness(self):
         self.game_data_collector.get_data(file_name=None)
-        self.set_keys()
         self.game_data = self.game_data_collector.game_data
         self.teams = self.game_data_collector.db_data
-
+        self.events = self.game_data_collector.events
+        self.team_ids = [self.teams[0].id, self.teams[1].id]
+        self.set_keys()
+        if analyzer.pickled:
+            return
         self.closeness_analyzer = ClosenessAnalyzer(self)
-        self.team_ids = [self.game_data_collector.db_data[0].id, self.game_data_collector.db_data[1].id]
 
     @RunFuncWithTimer('Passes')
     def calculate_passes(self):
         self.ball_data_collector.get_data(file_name=None)
-        self.match_collectors_player_names()
         self.ball_data = self.ball_data_collector.ball_data
         self.pass_analyzer = PassAnalyzer(self)
 
     @RunFuncWithTimer('Marking')
     def calculate_marking(self):
-        self.marking_analyzer = MarkingAnalyzer(self.game_data_collector.db_data)
+        self.marking_analyzer = MarkingAnalyzer(self)
 
     def set_keys(self):
-        self.home_keys = self.game_data_collector.db_data[0].get_player_names()
-        self.away_keys = self.game_data_collector.db_data[1].get_player_names()
-
-    def match_collectors_player_names(self):
-        self.ball_data_collector.db_data[0].set_player_names(self.teams[0].get_player_names())
-        self.ball_data_collector.db_data[0].set_jersey_numbers(self.teams[0].get_jersey_numbers())
-        self.ball_data_collector.db_data[1].set_player_names(self.teams[1].get_player_names())
-        self.ball_data_collector.db_data[1].set_jersey_numbers(self.teams[1].get_jersey_numbers())
+        self.home_keys = self.teams[0].get_player_names()
+        self.away_keys = self.teams[1].get_player_names()
 
     def calculate_average_team_length(self, ms):
         half = 1
@@ -112,7 +126,6 @@ class Analyzer:
 
         while True:
             sec_data = self.get_a_sec_data(self.game_data, half, minn, sec)
-
             if not sec_data:
                 ms.not_sec_data += 1
                 if minn/half<45:
@@ -135,6 +148,9 @@ class Analyzer:
             if sec_data[0][-2] != 0 and len(sec_data) >= 22:
                 ms.secs_secs[sec_data[0][1]] = {'dists': None, 'p2p': {}}
 
+                # my_dist1 = frobenius
+                # my_dist1_w = w. frobenius
+
                 my_dist1, my_dist1_w, my_dist2, my_dist2_w = self.calculate_dist(sec_data, ms=ms, my_way=True)
                 norm_dist1_x, norm_dist1_y, norm_dist2_x, norm_dist2_y = self.calculate_dist(sec_data)
 
@@ -149,23 +165,6 @@ class Analyzer:
 
                 ms.inc_my_totdist(my_dist1, my_dist1_w, my_dist2, my_dist2_w)
                 ms.inc_norm_totdist(norm_dist1_x, norm_dist1_y, norm_dist2_x, norm_dist2_y)
-
-                if not self.printed:
-                    # my_dist_home = self.calculate_dist(sec_data, my_way=True)[0]
-                    # my_dist_away = self.calculate_dist(sec_data, my_way=True)[1]
-                    # norm_dist_home = self.calculate_dist(sec_data, my_way=False)[0]
-                    # norm_dist_away = self.calculate_dist(sec_data, my_way=False)[1]
-                    # dp = DistPlotter(sec_data,
-                    #                  self.team_ids,
-                    #                  normal_dists=[norm_dist_home, norm_dist_away],
-                    #                  my_dists=[my_dist_home, my_dist_away])
-
-                    # dp.plot_pitch()
-                    # dp.put_players_on_pitch()
-                    # dp.plot_norm_dist()
-                    # dp.show_dist_stats()
-                    # dp.show()
-                    self.printed = True
 
             if sec_data[0][-2] == 0:
                 state = 0
@@ -183,9 +182,10 @@ class Analyzer:
                 minn += 1
                 sec = 0
 
+        ms.secs_secs.keys()
         ms.set_cohesive_matrices(self.data_arrays['team1_total_def'],
                                  self.data_arrays['team1_total_off'],
-                                 self.game_data_collector.db_data[0].get_player_names())
+                                 self.teams[0].get_player_names())
 
         return ms.get_return_info()
 
@@ -232,8 +232,7 @@ class Analyzer:
                     ms.secs_secs[sec]['p2p'][get_name(p1)][get_name(p2)] = dist_meter * factor
                 total_dist += dist_meter * factor
                 total_count += 1
-        # return norm_total_dist / float(total_count), total_dist / float(total_count)
-        return norm_total_dist**0.5, total_dist**0.5
+        return norm_total_dist / float(total_count), total_dist / float(total_count)
 
     def norm_calculation(self, team_data, ind):
         if ind == 0:
@@ -260,9 +259,9 @@ class Analyzer:
         hasball = self.team_ids[0] == sec_data[0][0]
         sec = sec_data[0][1]
 
-        team_players1 = self.game_data_collector.db_data[0].get_player_names()
+        team_players1 = self.teams[0].get_player_names()
         team_data1 = filter(lambda x: x[0] == self.team_ids[0], sec_data)
-        team_players2 = self.game_data_collector.db_data[1].get_player_names()
+        team_players2 = self.teams[1].get_player_names()
         team_data2 = filter(lambda x: x[0] == self.team_ids[1], sec_data)
 
         if my_way:
@@ -281,22 +280,20 @@ class Analyzer:
             return team_matrix / float(np.amax(team_matrix))
 
         for i in range(2):
-            self.data_arrays['team%d_closeness' % (i+1)] = self.closeness_analyzer.closeness_matrices[i]
-            self.data_arrays['team%d_passes' % (i + 1)] = self.pass_analyzer.pass_matrices[i]
-            self.data_arrays['team%d_marking' % (i + 1)] = self.marking_analyzer.marking_matrices[i]
+            self.data_arrays['team%d_closeness' % (i+1)] = self.closeness_matrices[i]
+            self.data_arrays['team%d_passes' % (i + 1)] = self.pass_matrices[i]
+            self.data_arrays['team%d_marking' % (i + 1)] = self.marking_matrices[i]
             self.data_arrays['team%d_total_off' % (i + 1)] = \
                 normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_passes' % (i + 1)])
             self.data_arrays['team%d_total_def' % (i + 1)] = \
                 normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_marking' % (i + 1)])
 
     def save_weights(self):
-        pickled_data = {'home': {}, 'away': {}}
-        pickled_data['home']['closeness'] = analyzer.closeness_analyzer.p2p_dicts[0]
-        pickled_data['home']['pass'] = analyzer.pass_p2p_dicts[0]
-        pickled_data['home']['marking'] = analyzer.marking_analyzer.p2p_dicts[0]
-        pickled_data['away']['closeness'] = analyzer.closeness_analyzer.p2p_dicts[1]
-        pickled_data['away']['pass'] = analyzer.pass_p2p_dicts[1]
-        pickled_data['away']['marking'] = analyzer.marking_analyzer.p2p_dicts[1]
+        pickled_data = {}
+        pickled_data['closeness'] = analyzer.closeness_matrices
+        pickled_data['pass'] = analyzer.pass_matrices
+        pickled_data['marking'] = analyzer.marking_matrices
+
         self.pickle_loader.dump_data(pickled_data)
 
 if __name__ == "__main__":
@@ -307,6 +304,7 @@ if __name__ == "__main__":
     validator.get_games_from_db()
     print "Get game\t:", "%.2f secs" % (time.time() - start)
     games = validator.return_games()
+    game_events_by_type = {}
 
     mine = 0
     nrml = 0
@@ -315,15 +313,21 @@ if __name__ == "__main__":
     midway = True
 
     for cnt, game in enumerate(games):
-        analyzer = Analyzer(games[game])
+        analyzer = Analyzer(games[game], game_events_by_type)
         ms = MatchStatistics(analyzer)
 
         analyzer.game_data_collector = GameData(get_type='Multiple', game=games[game])
         analyzer.ball_data_collector = BallData(get_type='Multiple', game=games[game])
 
-        analyzer.calculate_closeness()
-        analyzer.calculate_passes()
-        analyzer.calculate_marking()
+        analyzer.closeness_matrices, analyzer.pass_matrices, analyzer.marking_matrices = analyzer.get_matrices_pickled()
+        if not analyzer.pickled:
+            analyzer.calculate_closeness()
+            analyzer.calculate_passes()
+            analyzer.calculate_marking()
+            analyzer.save_weights()
+        else:
+            analyzer.calculate_closeness()
+            analyzer.save_weights()
 
         # importance_list = []
         # for i in range(0, 2):
@@ -335,10 +339,10 @@ if __name__ == "__main__":
         #     importance = cls + mrk + pss
         #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
 
-        analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.closeness_matrices[0])
+        analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_matrices[0])
         analyzer.matrix_plotter.set_keys()
-        analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.pass_matrices[0])
-        analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.marking_matrices[0])
+        analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_matrices[0])
+        analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_matrices[0])
         # analyzer.matrix_plotter.plot()
         # scatter = PitchScatter(analyzer.game_data_collector.db_data)
         # analyzer.matrix_plotter.set_scatter(scatter)
@@ -348,8 +352,9 @@ if __name__ == "__main__":
             analyzer.create_2d_arrays()
             mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
             ms.print_ms()
-            ms.dist_plotter()
-            ms.scenario_plotter(just_home, midway)
+            # ms.dist_plotter()
+            # ms.scenario_plotter(just_home, midway)
+            ms.trace_game_events()
 
             Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 
@@ -363,12 +368,17 @@ if __name__ == "__main__":
             else:
                 nrml += 1
 
-            break
-
         except Exception, e:
             print "PROBLEM IN", games[game]['home']['name'], games[game]['away']['name'], "GAME."
             print e
             traceback.print_exc()
+
+    for type in game_events_by_type:
+        home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
+        for event in home_events:
+            plt.plot(event['flow'])
+        plt.title('%d event %d count' % (type, len(home_events)))
+        plt.show()
 
     print mine, nrml
 

@@ -26,7 +26,7 @@ class BallData(DbDataCollector):
                 self.ball_data = self.db_data['ball_data']
                 self.db_data = self.db_data['teams']
             else:
-                print 'NOT FOUND PICKLE %s', self.pkl_loader.filename
+                print 'NOT FOUND PICKLE %s' % self.pkl_loader.filename
                 self.db_data = []
                 self.get_data_from_db(self.team_names[0], self.team_names[1])
                 self.pkl_loader.dump_data({'teams': self.db_data,
