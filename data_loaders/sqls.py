@@ -50,7 +50,7 @@ class Sqls:
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
               t1.ID = 3
-        GROUP BY(p.MATCH_ID)
+        GROUP BY(p.MATCH_ID) LIMIT 1
     """
 
     GET_TEAM_LENGTH_DATA = """

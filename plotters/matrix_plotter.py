@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
+from commons import Commons
+
 
 class MatrixPlotter:
-
-
     def __init__(self):
         self.keys = None
         self.closeness_matrix = None
@@ -28,28 +28,6 @@ class MatrixPlotter:
     def set_marking_matrix(self, matrix):
         self.marking_matrix = matrix
 
-    @staticmethod
-    def dict_to_matrix(data_as_dict, keys, is_normalize=True):
-        def normalize():
-            def minmax(x):
-                return (x - mn) / float(mx - mn)
-            mx = np.max(team_matrix)
-            mn = np.min(team_matrix)
-            minmax_vec = np.vectorize(minmax)
-            return minmax_vec(team_matrix)
-        team_matrix = np.zeros((11, 11))
-
-        for cnt1, player1 in enumerate(keys):
-            for cnt2, player2 in enumerate(keys):
-                # If it is himself put 0 into that cell
-                if player1 == player2:
-                    team_matrix[cnt1, cnt2] = 0
-                else:
-                    team_matrix[cnt1][cnt2] = data_as_dict[player1][player2]
-        if is_normalize:
-            team_matrix = normalize()
-        return team_matrix
-
     def set_scatter(self, scatter):
         self.scatter = scatter
 
@@ -58,7 +36,7 @@ class MatrixPlotter:
         fig = plt.figure()
 
         ax1 = fig.add_subplot(grid[0, 0])
-        matrix = self.dict_to_matrix(self.closeness_matrix, self.keys)
+        matrix = Commons.dict_to_matrix(self.closeness_matrix, self.keys)
         self.matrix = matrix
         im = ax1.imshow(matrix, cmap='inferno')
         plt.colorbar(im)
@@ -71,7 +49,7 @@ class MatrixPlotter:
             tick.set_rotation(-45)
 
         ax2 = fig.add_subplot(grid[0, 1])
-        matrix = self.dict_to_matrix(self.pass_matrix, self.keys)
+        matrix = Commons.dict_to_matrix(self.pass_matrix, self.keys)
         im = ax2.imshow(matrix, cmap='inferno')
         plt.colorbar(im)
         ax2.set_title("Pass Counts Matrix")
@@ -83,7 +61,7 @@ class MatrixPlotter:
             tick.set_rotation(-45)
 
         ax2 = fig.add_subplot(grid[0, 2])
-        matrix = self.dict_to_matrix(self.marking_matrix, self.keys)
+        matrix = Commons.dict_to_matrix(self.marking_matrix, self.keys)
         im = ax2.imshow(matrix, cmap='inferno')
         plt.colorbar(im)
         ax2.set_title("Marking Matrix")

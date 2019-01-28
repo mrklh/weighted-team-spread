@@ -3,12 +3,12 @@
 from mine_sql_connection import MySqlConnection
 from team import Team
 from sqls import Sqls
-
+from commons import Commons
 
 class DbDataCollector:
     def __init__(self, get_type='Single', game=None):
-        home_name = self.get_team_abb(game['home']['name'])
-        away_name = self.get_team_abb(game['away']['name'])
+        home_name = Commons.get_team_abb(game['home']['name'])
+        away_name = Commons.get_team_abb(game['away']['name'])
         team_abbs = (home_name, away_name)
         team_names = (game['home']['name'], game['away']['name'])
 
@@ -75,41 +75,3 @@ class DbDataCollector:
 
         self.conn.execute_query(query)
 
-    @staticmethod
-    def get_team_abb(team_name):
-        if team_name == u'Beşiktaş':
-            return 'BJK'
-        if team_name == u'Galatasaray':
-            return 'GS'
-        if team_name == u'Fenerbahçe':
-            return 'FB'
-        if team_name == u'Akhisar Bld.Spor':
-            return 'AKH'
-        if team_name == u'Alanyaspor':
-            return 'ALN'
-        if team_name == u'Antalyaspor':
-            return 'ANT'
-        if team_name == u'Bursaspor':
-            return 'BUR'
-        if team_name == u'Gençlerbirliği':
-            return 'GNC'
-        if team_name == u'Göztepe':
-            return 'GOZ'
-        if team_name == u'Medipol Başakşehir':
-            return 'BSK'
-        if team_name == u'KDÇ Karabükspor':
-            return 'KBK'
-        if team_name == u'Kasımpaşa':
-            return 'KSM'
-        if team_name == u'Kayserispor':
-            return 'KYS'
-        if team_name == u'Atiker Konyaspor':
-            return 'KON'
-        if team_name == u'Yeni Malatyaspor':
-            return 'MLT'
-        if team_name == u'Sivasspor':
-            return 'SVS'
-        if team_name == u'Trabzonspor':
-            return 'TS'
-        if team_name == u'Osmanlıspor':
-            return 'OSM'

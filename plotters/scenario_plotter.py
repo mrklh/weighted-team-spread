@@ -7,6 +7,7 @@ from scipy.spatial import ConvexHull
 
 from matrix_plotter import MatrixPlotter
 from plot_screen import PlotScreen
+from commons import Commons
 
 
 class ScenarioPlotter:
@@ -266,7 +267,7 @@ class ScenarioPlotter:
         self.set_time_text(i/10)
 
     def animate_strength(self, i):
-        self.cs_im.set_array(MatrixPlotter.dict_to_matrix(self.p2p_data[i / 10], self.names, is_normalize=False))
+        self.cs_im.set_array(Commons.dict_to_matrix(self.p2p_data[i / 10], self.names, is_normalize=False))
 
     def animate_cohesive(self, i):
         if self.hasball_data[i/10] == self.team_ids[0]:

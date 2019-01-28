@@ -4,7 +4,7 @@ from scipy.stats.stats import pearsonr
 
 from plotters.scenario_plotter import ScenarioPlotter
 from plotters.dist_time_plotter import DistTimePlotter
-
+from commons import Commons
 
 class MatchStatistics:
     def __init__(self, analyzer):
@@ -32,6 +32,8 @@ class MatchStatistics:
         self.def_cohesive_matrix = None
         self.off_cohesive_matrix = None
         self.names = None
+
+        self.sec_keys_of_ball_data = [x[0] for x in self.analyzer.ball_data]
 
     def increment_hasball_secs(self, state):
         '''
@@ -93,15 +95,36 @@ class MatchStatistics:
         print "////////////////////////////////////////////////////////"
         print "////////////////////////////////////////////////////////"
 
-    def find_beginning_of_attacking_transaction(self, event_start_time):
+    def find_beginning_of_attacking_transaction(self, event_time):
         sec_keys = sorted(self.secs_secs.keys())
+        time = rtime = event_time
+        init_hasball_team = 0
 
-        print '#' * 50
-        print '#' * 50
-        print len(sec_keys), len(self.analyzer.ball_data)
-        print '#' * 50
-        print '#' * 50
+        while True:
+            hasball_team = self.find_who_has_ball(time)
+            if not init_hasball_team and hasball_team:
+                init_hasball_team = hasball_team
 
+            # Veri bozulduysa return
+            if time not in sec_keys:
+                return rtime
+
+
+            if hasball_team != init_hasball_team:
+                return rtime
+
+            rtime = time
+            time = Commons.decrease_time(time)
+
+            if time < 0:
+                return rtime
+
+    def find_who_has_ball(self, time):
+        try:
+            data = self.analyzer.ball_data[self.sec_keys_of_ball_data.index(time)]
+            return data[2]
+        except:
+            return -1
 
     def trace_game_events(self):
         '''
@@ -110,6 +133,7 @@ class MatchStatistics:
         sec_keys = sorted(self.secs_secs.keys())
 
         for event in self.analyzer.events:
+            self.find_beginning_of_attacking_transaction(event[0])
             continuous = True
             for i in range(8):
                 if not (event[0] - i) in sec_keys:
@@ -123,7 +147,6 @@ class MatchStatistics:
                 if not self.analyzer.events_by_type.get(event[-1]):
                     self.analyzer.events_by_type[event[-1]] = []
                 self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
-
 
     def scenario_plotter(self, just_home, midway):
         sec_list = []
@@ -145,8 +168,3 @@ class MatchStatistics:
 
     def dist_plotter(self):
         DistTimePlotter({key: self.secs_secs[key]['dists'] for key in self.secs_secs})
-
-    def minus_in_time_hash(self, hash):
-        half = str(hash)[0]
-        min = str(hash)[1:3]
-        return

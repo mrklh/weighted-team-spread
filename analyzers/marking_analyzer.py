@@ -1,6 +1,7 @@
 import pprint
 from plotters.dist_plotter import DistPlotter
 from plotters.matrix_plotter import MatrixPlotter
+from commons import Commons
 
 class MarkingAnalyzer:
     def __init__(self, analyzer):
@@ -39,13 +40,7 @@ class MarkingAnalyzer:
         if not sum(point1) or not sum(point2):
             return False
 
-        return self.is_in_range(point1, point2)
-
-    @staticmethod
-    def is_in_range(point1, point2):
-        if ((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)**0.5 < 5:
-            return True
-        return False
+        return Commons.is_in_range(point1, point2)
 
     def generate_marking_dicts(self):
         '''
@@ -99,8 +94,8 @@ class MarkingAnalyzer:
                     self.analyze_markings(0, player_marking_rivals)
 
         self.analyzer.marking_matrices = [
-            MatrixPlotter.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
-            MatrixPlotter.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
+            Commons.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
+            Commons.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
         ]
 
     def analyze_markings(self, ind, marking_data):

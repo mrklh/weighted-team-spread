@@ -1,6 +1,6 @@
 from plotters.matrix_plotter import MatrixPlotter
 import pprint
-
+from commons import Commons
 
 class ClosenessAnalyzer:
     def __init__(self, analyzer):
@@ -55,21 +55,9 @@ class ClosenessAnalyzer:
             return False
 
         if range_type:
-            x = self.is_in_range_off(point1, point2)
+            x = Commons.is_in_range(point1, point2)
             return x
-        return self.is_in_range_def(point1, point2)
-
-    @staticmethod
-    def is_in_range_off(point1, point2):
-        if ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5 < 5:
-            return True
-        return False
-
-    @staticmethod
-    def is_in_range_def(point1, point2):
-        if ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5 < 1:
-            return True
-        return False
+        return Commons.is_in_range_def(point1, point2)
 
     def generate_closeness_matrices(self):
         '''
@@ -88,6 +76,6 @@ class ClosenessAnalyzer:
                             team[player][friend] += 1
 
         self.analyzer.closeness_matrices = [
-            MatrixPlotter.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
-            MatrixPlotter.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
+            Commons.dict_to_matrix(self.p2p_dicts[0], self.analyzer.teams[0].get_player_names(), True),
+            Commons.dict_to_matrix(self.p2p_dicts[1], self.analyzer.teams[1].get_player_names(), True)
         ]

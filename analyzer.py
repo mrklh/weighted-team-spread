@@ -13,7 +13,7 @@ from validator import Validator
 from match_statistics import MatchStatistics
 from data_loaders.pickle_loader import PickleLoader
 from data_loaders.db_data_collector import DbDataCollector
-
+from commons import Commons
 
 import matplotlib.pyplot as plt
 
@@ -67,8 +67,8 @@ class Analyzer:
         self.sec_splitter_index = 0
         self.data_arrays = {}
         self.printed = False
-        self.pickle_loader = PickleLoader("matrix_%s_%s" % (DbDataCollector.get_team_abb(game_info['home']['name']),
-                                                            DbDataCollector.get_team_abb(game_info['away']['name'])))
+        self.pickle_loader = PickleLoader("matrix_%s_%s" % (Commons.get_team_abb(game_info['home']['name']),
+                                                            Commons.get_team_abb(game_info['away']['name'])))
 
     class RunFuncWithTimer(object):
         def __init__(self, tag):
@@ -109,6 +109,8 @@ class Analyzer:
     def calculate_passes(self):
         self.ball_data_collector.get_data(file_name=None)
         self.ball_data = self.ball_data_collector.ball_data
+        if analyzer.pickled:
+            return
         self.pass_analyzer = PassAnalyzer(self)
 
     @RunFuncWithTimer('Marking')
@@ -327,14 +329,14 @@ if __name__ == "__main__":
             analyzer.save_weights()
         else:
             analyzer.calculate_closeness()
-            analyzer.save_weights()
+            analyzer.calculate_passes()
 
         # importance_list = []
         # for i in range(0, 2):
         #     players = analyzer.game_data_collector.db_data[i].get_player_names()
-        #     cls = MatrixPlotter.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
-        #     mrk = MatrixPlotter.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
-        #     pss = MatrixPlotter.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
+        #     cls = Commons.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
+        #     mrk = Commons.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
+        #     pss = Commons.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
         #
         #     importance = cls + mrk + pss
         #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
@@ -373,14 +375,14 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    for type in game_events_by_type:
-        home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
-        for event in home_events:
-            plt.plot(event['flow'])
-        plt.title('%d event %d count' % (type, len(home_events)))
-        plt.show()
-
-    print mine, nrml
+    # for type in game_events_by_type:
+    #     home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
+    #     for event in home_events:
+    #         plt.plot(event['flow'])
+    #     plt.title('%d event %d count' % (type, len(home_events)))
+    #     plt.show()
+    #
+    # print mine, nrml
 
 
 ###################################################################################################
