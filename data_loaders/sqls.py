@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class Sqls:
     GET_GAME_DATA = """
     SELECT r.team_id, half*10000 + minute*100 + second, half, minute, 
@@ -18,7 +20,7 @@ class Sqls:
     """
 
     GET_BALL_DATA = """
-    SELECT m.id, half*10000 + minute*60 + second, half, minute, 
+    SELECT m.id, half*10000 + minute*100 + second, half, minute, 
            second, d.X_POS, d.Y_POS, d.hasball_team_id, d.hasball_jersey_number
         FROM tf_match_persecdata d, td_team t1, td_team t2, tf_match m
         WHERE d.team_id = 0 AND
@@ -49,7 +51,7 @@ class Sqls:
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
-              t1.ID = 3
+              (t1.ID = 3 OR t2.ID = 3)
         GROUP BY(p.MATCH_ID) LIMIT 1
     """
 
