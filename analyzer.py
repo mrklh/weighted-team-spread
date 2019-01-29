@@ -128,6 +128,7 @@ class Analyzer:
 
         while True:
             sec_data = self.get_a_sec_data(self.game_data, half, minn, sec)
+
             if not sec_data:
                 ms.not_sec_data += 1
                 if minn/half<45:
@@ -148,6 +149,7 @@ class Analyzer:
 
             # At least 22 players exist and a team has ball
             if sec_data[0][-2] != 0 and len(sec_data) >= 22:
+            # if len(sec_data) >= 22:
                 ms.secs_secs[sec_data[0][1]] = {'dists': None, 'p2p': {}}
 
                 # my_dist1 = frobenius
@@ -258,7 +260,7 @@ class Analyzer:
         return abs(sec_min_x[5] - sec_max_x[5]), abs(sec_min_y[6] - sec_max_y[6])
 
     def calculate_dist(self, sec_data, ms=None, my_way=False):
-        hasball = self.team_ids[0] == sec_data[0][0]
+        hasball = self.team_ids[0] == sec_data[0][-2]
         sec = sec_data[0][1]
 
         team_players1 = self.teams[0].get_player_names()
@@ -354,6 +356,7 @@ if __name__ == "__main__":
             analyzer.create_2d_arrays()
             mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
             ms.print_ms()
+            ms.set_sec_keys_of_ball_data()
             # ms.dist_plotter()
             # ms.scenario_plotter(just_home, midway)
             ms.trace_game_events()
@@ -375,12 +378,12 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    # for type in game_events_by_type:
-    #     home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
-    #     for event in home_events:
-    #         plt.plot(event['flow'])
-    #     plt.title('%d event %d count' % (type, len(home_events)))
-    #     plt.show()
+    for type in game_events_by_type:
+        home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
+        for event in home_events:
+            plt.plot(event['flow'])
+        plt.title('%d event %d count' % (type, len(home_events)))
+        plt.show()
     #
     # print mine, nrml
 

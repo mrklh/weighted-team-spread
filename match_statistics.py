@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pprint
 
 from scipy.stats.stats import pearsonr
@@ -33,6 +35,9 @@ class MatchStatistics:
         self.off_cohesive_matrix = None
         self.names = None
 
+        self.sec_keys_of_ball_data = None
+
+    def set_sec_keys_of_ball_data(self):
         self.sec_keys_of_ball_data = [x[0] for x in self.analyzer.ball_data]
 
     def increment_hasball_secs(self, state):
@@ -97,27 +102,49 @@ class MatchStatistics:
 
     def find_beginning_of_attacking_transaction(self, event_time):
         sec_keys = sorted(self.secs_secs.keys())
-        time = rtime = event_time
+
         init_hasball_team = 0
+        time_list = []
+        time = event_time
+        gap = 0
 
         while True:
-            hasball_team = self.find_who_has_ball(time)
-            if not init_hasball_team and hasball_team:
-                init_hasball_team = hasball_team
+            # 3 saniyelik bir boşluk var burada keseceğiz.
+            if gap == 4:
+                # print 'returns at %d because gap of 4' % time
+                return list(reversed(time_list))
 
             # Veri bozulduysa return
             if time not in sec_keys:
-                return rtime
+                # print 'Found a gap at %d' % time,
+                gap += 1
+                time = Commons.decrease_time(time)
+                continue
+            else:
+                gap = 0
 
+            hasball_team = self.find_who_has_ball(time)
 
+            # Olay anında topun kimde olduğunu bulalım.
+            if not init_hasball_team and hasball_team:
+                init_hasball_team = hasball_team
+            elif not init_hasball_team and not hasball_team:
+                gap += 1
+
+            # Topa sahip takım değiştiyse return
             if hasball_team != init_hasball_team:
-                return rtime
+                # print 'returns at %d because hasball changed' % time
+                return list(reversed(time_list))
 
-            rtime = time
+            time_list.append(time)
+
+            # 1 saniye geri gidelim.
             time = Commons.decrease_time(time)
 
+            # Devrenin başına geldiysek return
             if time < 0:
-                return rtime
+                # print 'returns at %d because we are at beginning of half' % time
+                return list(reversed(time_list))
 
     def find_who_has_ball(self, time):
         try:
@@ -126,27 +153,46 @@ class MatchStatistics:
         except:
             return -1
 
+    def interpolate_event_flow(self, time_list, event_flow):
+        new_event_flow = []
+        for c, time in enumerate(time_list[:-1]):
+            new_event_flow.append(event_flow[c])
+            if time != Commons.decrease_time(time_list[c+1]):
+                gap = 0
+
+                inter_time = Commons.increase_time(time)
+                while inter_time != time_list[c+1]:
+                    gap += 1
+                    inter_time = Commons.increase_time(inter_time)
+
+                wfrob_diff = event_flow[c+1] - event_flow[c]
+                for i in range(1, gap+1):
+                    new_event_flow.append(event_flow[c] + (wfrob_diff/(gap+1))*i)
+
+
+        new_event_flow.append(event_flow[-1])
+        
+        return new_event_flow
+
+
     def trace_game_events(self):
         '''
         Traces all events and finds if it has continuous series of seconds of 10
         '''
-        sec_keys = sorted(self.secs_secs.keys())
-
         for event in self.analyzer.events:
-            self.find_beginning_of_attacking_transaction(event[0])
-            continuous = True
-            for i in range(8):
-                if not (event[0] - i) in sec_keys:
-                    continuous = False
-                    continue
-            if continuous:
-                index = 1 if event[1] == self.analyzer.teams[0].id else 3
-                base = self.secs_secs[event[0] - 7]['dists'][index]
-                event_flow = [self.secs_secs[x]['dists'][index] - base for x in range(event[0] - 7, event[0])]
+            time_list =  self.find_beginning_of_attacking_transaction(event[0])
+            if len(time_list) < 5:
+                continue
 
-                if not self.analyzer.events_by_type.get(event[-1]):
-                    self.analyzer.events_by_type[event[-1]] = []
-                self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
+            index = 1 if event[1] == self.analyzer.teams[0].id else 3
+            base = self.secs_secs[time_list[0]]['dists'][index]
+            event_flow = [self.secs_secs[x]['dists'][index] - base for x in time_list]
+            event_flow = self.interpolate_event_flow(time_list, event_flow)
+
+            if not self.analyzer.events_by_type.get(event[-1]):
+                self.analyzer.events_by_type[event[-1]] = []
+
+            self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
 
     def scenario_plotter(self, just_home, midway):
         sec_list = []

@@ -109,3 +109,17 @@ class Commons:
 
         return half * 10000 + minute * minutes_base + sec
 
+    @staticmethod
+    def increase_time(time, minutes_base=100):
+        half = time / 10000
+        minute = (time - half * 10000) / minutes_base
+        sec = time % 100
+
+        if sec == 59:
+            sec = 0
+            minute += 1
+        else:
+            sec += 1
+
+        return half * 10000 + minute * minutes_base + sec
+
