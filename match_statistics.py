@@ -174,7 +174,6 @@ class MatchStatistics:
         
         return new_event_flow
 
-
     def trace_game_events(self):
         '''
         Traces all events and finds if it has continuous series of seconds of 10
@@ -193,6 +192,19 @@ class MatchStatistics:
                 self.analyzer.events_by_type[event[-1]] = []
 
             self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
+
+    def split_game_events_to_teams(self):
+        teams = {}
+        for key in self.analyzer.events_by_type:
+            for event in self.analyzer.events_by_type[key]:
+                if not teams.get(event['event'][2]):
+                    teams[event['event'][2]] = {key: []}
+                if not teams[event['event'][2]].get(key):
+                    teams[event['event'][2]][key] = []
+
+                teams[event['event'][2]][key].append(event)
+
+        return teams
 
     def scenario_plotter(self, just_home, midway):
         sec_list = []

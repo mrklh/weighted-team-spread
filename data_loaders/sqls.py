@@ -50,9 +50,8 @@ class Sqls:
         
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
-              t1.ID = m.HOME_ID AND
-              (t1.ID = 3 OR t2.ID = 3)
-        GROUP BY(p.MATCH_ID) LIMIT 1
+              t1.ID = m.HOME_ID
+        GROUP BY(p.MATCH_ID)
     """
 
     GET_TEAM_LENGTH_DATA = """

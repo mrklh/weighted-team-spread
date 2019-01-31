@@ -170,9 +170,9 @@ class Analyzer:
                 ms.inc_my_totdist(my_dist1, my_dist1_w, my_dist2, my_dist2_w)
                 ms.inc_norm_totdist(norm_dist1_x, norm_dist1_y, norm_dist2_x, norm_dist2_y)
 
-            if sec_data[0][-2] == 0:
+            if sec_data[0][-3] == 0:
                 state = 0
-            elif sec_data[0][-2] == self.team_ids[0]:
+            elif sec_data[0][-3] == self.team_ids[0]:
                 state = 1
             else:
                 state = 2
@@ -298,7 +298,7 @@ class Analyzer:
         pickled_data['pass'] = analyzer.pass_matrices
         pickled_data['marking'] = analyzer.marking_matrices
 
-        self.pickle_loader.dump_data(pickled_data)
+        # self.pickle_loader.dump_data(pickled_data)
 
 if __name__ == "__main__":
     import time
@@ -309,6 +309,7 @@ if __name__ == "__main__":
     print "Get game\t:", "%.2f secs" % (time.time() - start)
     games = validator.return_games()
     game_events_by_type = {}
+    teams_events = None
 
     mine = 0
     nrml = 0
@@ -317,42 +318,44 @@ if __name__ == "__main__":
     midway = True
 
     for cnt, game in enumerate(games):
-        analyzer = Analyzer(games[game], game_events_by_type)
-        ms = MatchStatistics(analyzer)
-
-        analyzer.game_data_collector = GameData(get_type='Multiple', game=games[game])
-        analyzer.ball_data_collector = BallData(get_type='Multiple', game=games[game])
-
-        analyzer.closeness_matrices, analyzer.pass_matrices, analyzer.marking_matrices = analyzer.get_matrices_pickled()
-        if not analyzer.pickled:
-            analyzer.calculate_closeness()
-            analyzer.calculate_passes()
-            analyzer.calculate_marking()
-            analyzer.save_weights()
-        else:
-            analyzer.calculate_closeness()
-            analyzer.calculate_passes()
-
-        # importance_list = []
-        # for i in range(0, 2):
-        #     players = analyzer.game_data_collector.db_data[i].get_player_names()
-        #     cls = Commons.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
-        #     mrk = Commons.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
-        #     pss = Commons.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
-        #
-        #     importance = cls + mrk + pss
-        #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
-
-        analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_matrices[0])
-        analyzer.matrix_plotter.set_keys()
-        analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_matrices[0])
-        analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_matrices[0])
-        # analyzer.matrix_plotter.plot()
-        # scatter = PitchScatter(analyzer.game_data_collector.db_data)
-        # analyzer.matrix_plotter.set_scatter(scatter)
-        # analyzer.matrix_plotter.plot_scatter(importance_list)
-
+        print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+        print '%d of 306 games' % (cnt + 1)
         try:
+            analyzer = Analyzer(games[game], game_events_by_type)
+            ms = MatchStatistics(analyzer)
+
+            analyzer.game_data_collector = GameData(get_type='Multiple', game=games[game])
+            analyzer.ball_data_collector = BallData(get_type='Multiple', game=games[game])
+
+            analyzer.closeness_matrices, analyzer.pass_matrices, analyzer.marking_matrices = analyzer.get_matrices_pickled()
+            if not analyzer.pickled:
+                analyzer.calculate_closeness()
+                analyzer.calculate_passes()
+                analyzer.calculate_marking()
+                analyzer.save_weights()
+            else:
+                analyzer.calculate_closeness()
+                analyzer.calculate_passes()
+
+            # importance_list = []
+            # for i in range(0, 2):
+            #     players = analyzer.game_data_collector.db_data[i].get_player_names()
+            #     cls = Commons.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
+            #     mrk = Commons.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
+            #     pss = Commons.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
+            #
+            #     importance = cls + mrk + pss
+            #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
+
+            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_matrices[0])
+            analyzer.matrix_plotter.set_keys()
+            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_matrices[0])
+            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_matrices[0])
+            # analyzer.matrix_plotter.plot()
+            # scatter = PitchScatter(analyzer.game_data_collector.db_data)
+            # analyzer.matrix_plotter.set_scatter(scatter)
+            # analyzer.matrix_plotter.plot_scatter(importance_list)
+
             analyzer.create_2d_arrays()
             mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
             ms.print_ms()
@@ -360,6 +363,7 @@ if __name__ == "__main__":
             # ms.dist_plotter()
             # ms.scenario_plotter(just_home, midway)
             ms.trace_game_events()
+            teams_events = ms.split_game_events_to_teams()
 
             Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 
@@ -378,12 +382,23 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    for type in game_events_by_type:
-        home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[type])
-        for event in home_events:
-            plt.plot(event['flow'])
-        plt.title('%d event %d count' % (type, len(home_events)))
-        plt.show()
+    # try:
+    #     import pickle
+    #     with open('pickles/bjk_events.pkl', "wb+") as f:
+    #         pickle.dump(game_events_by_type, f)
+    # except:
+    #     print 'Could not dump.'
+
+    import pickle
+    with open('pickles/teams_events.pkl', 'wb+') as f:
+        pickle.dump(teams_events, f)
+
+    # for typ in game_events_by_type:
+    #     home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[typ])
+    #     for event in home_events:
+    #         plt.plot(event['flow'])
+    #     plt.title('%d event %d count' % (typ, len(home_events)))
+    #     plt.show()
     #
     # print mine, nrml
 
