@@ -70,7 +70,7 @@ class Sqls:
     WHERE 
     d.MATCH_ID = %d AND 
     e.ID = d.EVENT_ID AND
-    (e.ID = 10 or e.ID = 70 or e.ID = 72)
+    (e.ID = 10 or e.ID = 70 or e.ID = 72 or e.ID = 12)
     """ # TODO using player id instead of jersey number
 
     GET_SUBS_DATA = """
