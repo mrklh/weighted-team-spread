@@ -197,12 +197,12 @@ class MatchStatistics:
         teams = {}
         for key in self.analyzer.events_by_type:
             for event in self.analyzer.events_by_type[key]:
-                if not teams.get(event['event'][2]):
-                    teams[event['event'][2]] = {key: []}
-                if not teams[event['event'][2]].get(key):
-                    teams[event['event'][2]][key] = []
+                if not teams.get(event['event'][1]):
+                    teams[event['event'][1]] = {key: []}
+                if not teams[event['event'][1]].get(key):
+                    teams[event['event'][1]][key] = []
 
-                teams[event['event'][2]][key].append(event)
+                teams[event['event'][1]][key].append(event)
 
         return teams
 
