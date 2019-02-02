@@ -58,31 +58,42 @@ def calculate_average(data):
 
     return avg_data
 
+def scale_to_twenty_sec(flow):
+
+
 def extract_png_graphs():
     for team in data:
-        f, (ax1, ax2, ax3) = plt.subplots(3, 1, sharey=True)
+        f, (axs1, axs2) = plt.subplots(2, 2, sharey=True)
         try:
             successful_cross = [row['flow'] for row in data[team].get(10, [])]
             for each in successful_cross:
-                ax1.plot(each)
+                axs1[0].plot(each)
             # ax1.plot(calculate_average(successful_cross), 'k')
-            ax1.set_title('Basarili Orta')
+            axs1[0].set_title('Basarili Orta')
         except Exception, e:
             traceback.print_exc()
         try:
             successful_shot = [row['flow'] for row in data[team].get(70, [])]
             for each in successful_shot:
-                ax2.plot(each)
+                axs1[1].plot(each)
             # ax2.plot(calculate_average(successful_shot), 'k')
-            ax2.set_title('Basarili Sut')
+            axs1[1].set_title('Basarili Sut')
         except:
             pass
         try:
             unsuccessful_shot = [row['flow'] for row in data[team].get(72)]
             for each in unsuccessful_shot:
-                ax3.plot(each)
+                axs2[0].plot(each)
             # ax3.plot(calculate_average(unsuccessful_shot), 'k')
-            ax3.set_title('Basarisiz Sut')
+            axs2[0].set_title('Basarisiz Sut')
+        except:
+            pass
+        try:
+            null_event = [row['flow'] for row in data[team].get(12)]
+            for each in null_event:
+                axs2[1].plot(each)
+            # ax3.plot(calculate_average(unsuccessful_shot), 'k')
+            axs2[1].set_title('Top Kaybi')
         except:
             pass
 
