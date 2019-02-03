@@ -4,7 +4,8 @@ import pprint
 import numpy as np
 import traceback
 import mysql.connector
-
+import math
+import sys
 
 class MySqlConnection:
     def __init__(self):
@@ -59,7 +60,45 @@ def calculate_average(data):
     return avg_data
 
 def scale_to_twenty_sec(flow):
+    print '/' * 50
+    print '/' * 50
+    pprint.pprint(flow)
+    print '==', len(flow), '=='
+    print '/' * 50
+    print '/' * 50
+    new_flow = [0]*20
 
+    if len(flow) > 20:
+        factor = (len(flow) - 1)/19.0
+        i_range = 20
+    else:
+        factor = 19.0/(len(flow) - 1)
+        i_range = len(flow)
+
+    for i in range(i_range):
+        ceil_index = int(math.ceil(factor*i))
+        if len(flow) > 20:
+            print 'ceil_index', ceil_index, 'i', i, 'factor', factor
+            print 'flow[ceil_index]', flow[ceil_index]
+            new_flow[i] = flow[ceil_index]
+        else:
+            print 'ceil_index', ceil_index, 'i', i, 'factor', factor
+            print 'flow[i]', flow[i]
+            new_flow[ceil_index] = flow[i]
+
+            if i != i_range - 1:
+                cnt = 1
+                for j in range(ceil_index+1, int(math.ceil(factor*(i+1)))):
+                    eps = (flow[i+1] - flow[i])/(int(math.ceil(factor*(i+1))) - ceil_index)
+                    new_flow[j] = new_flow[i] + (eps*cnt)
+                    cnt += 1
+
+    print '#' * 50
+    print '#' * 50
+    pprint.pprint(new_flow)
+    print '#' * 50
+    print '#' * 50
+    sys.exit(0)
 
 def extract_png_graphs():
     for team in data:
@@ -67,7 +106,8 @@ def extract_png_graphs():
         try:
             successful_cross = [row['flow'] for row in data[team].get(10, [])]
             for each in successful_cross:
-                axs1[0].plot(each)
+                axs1[0].plot(scale_to_twenty_sec(each))
+                sys.exit(0)
             # ax1.plot(calculate_average(successful_cross), 'k')
             axs1[0].set_title('Basarili Orta')
         except Exception, e:
@@ -75,7 +115,8 @@ def extract_png_graphs():
         try:
             successful_shot = [row['flow'] for row in data[team].get(70, [])]
             for each in successful_shot:
-                axs1[1].plot(each)
+                axs1[1].plot(scale_to_twenty_sec(each))
+                sys.exit(0)
             # ax2.plot(calculate_average(successful_shot), 'k')
             axs1[1].set_title('Basarili Sut')
         except:
@@ -83,7 +124,7 @@ def extract_png_graphs():
         try:
             unsuccessful_shot = [row['flow'] for row in data[team].get(72)]
             for each in unsuccessful_shot:
-                axs2[0].plot(each)
+                axs2[0].plot(scale_to_twenty_sec(each))
             # ax3.plot(calculate_average(unsuccessful_shot), 'k')
             axs2[0].set_title('Basarisiz Sut')
         except:
@@ -91,7 +132,7 @@ def extract_png_graphs():
         try:
             null_event = [row['flow'] for row in data[team].get(12)]
             for each in null_event:
-                axs2[1].plot(each)
+                axs2[1].plot(scale_to_twenty_sec(each))
             # ax3.plot(calculate_average(unsuccessful_shot), 'k')
             axs2[1].set_title('Top Kaybi')
         except:
