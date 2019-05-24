@@ -21,7 +21,7 @@ class GameData(DbDataCollector):
             if not self.db_data:
                 self.db_data = []
                 self.get_data_from_db()
-                self.pkl_loader.dump_data(self.db_data)
+                # self.pkl_loader.dump_data(self.db_data)
         else:
             self.pkl_loader = PickleLoader('game_%s_%s.pkl' % (self.team_abbs[0], self.team_abbs[1]))
             self.db_data = self.pkl_loader.return_data()
@@ -34,10 +34,10 @@ class GameData(DbDataCollector):
                 print 'NOT FOUND PICKLE %s' % self.pkl_loader.filename
                 self.db_data = []
                 self.get_data_from_db(self.team_names[0], self.team_names[1])
-                self.pkl_loader.dump_data({'db_data': self.db_data,
-                                           'game_data': self.game_data,
-                                           'subs': self.subs,
-                                           'events': self.events})
+                # self.pkl_loader.dump_data({'db_data': self.db_data,
+                #                            'game_data': self.game_data,
+                #                            'subs': self.subs,
+                #                            'events': self.events})
 
     def get_db_data(self):
         self.get_events()

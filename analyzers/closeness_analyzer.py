@@ -1,6 +1,8 @@
 from plotters.matrix_plotter import MatrixPlotter
 import pprint
 from commons import Commons
+import matplotlib.pyplot as plt
+import traceback
 
 class ClosenessAnalyzer:
     def __init__(self, analyzer):
@@ -55,23 +57,26 @@ class ClosenessAnalyzer:
             return False
 
         if range_type:
-            x = Commons.is_in_range(point1, point2)
-            return x
+            return Commons.is_in_range(point1, point2)
         return Commons.is_in_range_def(point1, point2)
 
     def generate_closeness_matrices(self):
         '''
         Generates p2p_dicts
-        
+
         []
-        
-        :return: 
+
+        :return:
         '''
-        for tim in self.tim_dict:
+        for count, tim in enumerate(self.tim_dict):
+            if len(self.tim_dict[tim]['players'].keys()) < 22:
+                continue
             for c, team in enumerate(self.p2p_dicts):
-                range_type = True if self.tim_dict[tim]['hasball_team_id'] == self.analyzer.teams[c].id else False
+                range_type = True if int(self.tim_dict[tim]['hasball_team_id']) == self.analyzer.teams[c].id else False
                 for player in team:
                     for friend in team[player]:
+                        if player == friend:
+                            continue
                         if self.range_calculator(range_type, tim, player, friend):
                             team[player][friend] += 1
 

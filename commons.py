@@ -1,10 +1,85 @@
 # -*- coding: utf-8 -*-
-
+import traceback
+import pprint
 
 class Commons:
+    teams = {
+        1: 'Galatasaray',
+        2: 'Fenerbahce',
+        3: 'Besiktas',
+        11: 'Akhisar Bld.Spor',
+        13: 'Alanyaspor',
+        21: 'Antalyaspor',
+        42: 'Bursaspor',
+        71: 'Genclerbirligi',
+        74: 'Goztepe',
+        82: 'Medipol Basaksehir',
+        86: 'KDC Karabukspor',
+        90: 'Kasimpasa',
+        93: 'Kayserispor',
+        101: 'Atiker Konyaspor',
+        105: 'Yeni Malatyaspor',
+        129: 'Sivasspor',
+        139: 'Trabzonspor',
+        20004: 'Osmanlispor'
+    }
+
+    event_teams = {
+        70: [1, 3, 13, 20004],
+        12: [2, 74, 42, 86],
+        -70: [3, 90, 21, 86],
+        -12: [3, 74, 42, 86]
+    }
+
+    bjk_bsk = [
+        'Fabricio',
+        'Adriano',
+        'Pepe',
+        'Dusko',
+        'Caner',
+        'Atiba',
+        'Tolgay',
+        'Ricardo',
+        'Anderson Souza ',
+        'Jeremain',
+        'Cenk'
+    ]
+
+    bjk_kon = [
+        'Fabricio',
+        'Adriano',
+        'Pepe',
+        'Gary',
+        'Caner',
+        'Atiba',
+        'Tolgay',
+        'Ricardo',
+        'Anderson Souza ',
+        'Ryan',
+        'Cenk'
+    ]
+
+    bjk_kon_num = [
+        1, 3, 5, 6, 88, 13, 18, 7, 94, 8, 23
+    ]
+
+    bjk_kon_jersey = {
+        'Fabricio': 1,
+        'Adriano': 3,
+        'Pepe': 5,
+        'Gary': 6,
+        'Caner': 88,
+        'Atiba': 13,
+        'Tolgay': 18,
+        'Ricardo': 7,
+        'Anderson Souza ': 94,
+        'Ryan': 8,
+        'Cenk': 23
+    }
+
     @staticmethod
     def check_same_team(row1, row2):
-        return row1[-2] == row2[-2]
+        return row1[-3] == row2[-3]
 
     @staticmethod
     def check_different_player(row1, row2):

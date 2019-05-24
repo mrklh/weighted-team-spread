@@ -3,6 +3,8 @@
 import pprint
 import traceback
 
+import numpy as np
+
 from data_loaders.get_a_game_data import GameData
 from data_loaders.get_a_game_ball_data import BallData
 from analyzers.closeness_analyzer import ClosenessAnalyzer
@@ -12,8 +14,11 @@ from plotters.matrix_plotter import MatrixPlotter
 from validator import Validator
 from match_statistics import MatchStatistics
 from data_loaders.pickle_loader import PickleLoader
+from plotters.pitch_plotter import PitchPlotter
 from data_loaders.db_data_collector import DbDataCollector
 from commons import Commons
+
+import pprint
 
 import matplotlib.pyplot as plt
 
@@ -65,7 +70,7 @@ class Analyzer:
         self.pickled = False
         self.matrix_plotter = MatrixPlotter()
         self.sec_splitter_index = 0
-        self.data_arrays = {}
+        self.weight_matrices = {}
         self.printed = False
         self.pickle_loader = PickleLoader("matrix_%s_%s" % (Commons.get_team_abb(game_info['home']['name']),
                                                             Commons.get_team_abb(game_info['away']['name'])))
@@ -148,9 +153,9 @@ class Analyzer:
                 continue
 
             # At least 22 players exist and a team has ball
-            if sec_data[0][-2] != 0 and len(sec_data) >= 22:
+            if sec_data[0][-3] != 0 and len(sec_data) >= 22:
             # if len(sec_data) >= 22:
-                ms.secs_secs[sec_data[0][1]] = {'dists': None, 'p2p': {}}
+                ms.secs_secs[sec_data[0][1]] = {'dists': None, 'p2p': {}, 'dist_matrix': {}}
 
                 # my_dist1 = frobenius
                 # my_dist1_w = w. frobenius
@@ -187,8 +192,8 @@ class Analyzer:
                 sec = 0
 
         ms.secs_secs.keys()
-        ms.set_cohesive_matrices(self.data_arrays['team1_total_def'],
-                                 self.data_arrays['team1_total_off'],
+        ms.set_cohesive_matrices(self.weight_matrices['team1_total_def'],
+                                 self.weight_matrices['team1_total_off'],
                                  self.teams[0].get_player_names())
 
         return ms.get_return_info()
@@ -208,6 +213,17 @@ class Analyzer:
         return filter(lambda x: x[1] == sec_key, game_data)
 
     def my_calculation(self, team_data, team_players, ind, hasball=False, ms=None, sec=None):
+        '''
+        Team spread value is calculated here.
+
+        :param team_data:
+        :param team_players:
+        :param ind:
+        :param hasball:
+        :param ms:
+        :param sec:
+        :return:
+        '''
         def get_name(p_data):
             return p_data[-1] or 'Unknown Player'
 
@@ -219,24 +235,32 @@ class Analyzer:
                 if p1[-1] == p2[-1]:
                     if not ms.secs_secs[sec]['p2p'].get(get_name(p1)):
                         ms.secs_secs[sec]['p2p'][get_name(p1)] = {}
+                    if not ms.secs_secs[sec]['dist_matrix'].get(get_name(p1)):
+                        ms.secs_secs[sec]['dist_matrix'][get_name(p1)] = {}
+
                     ms.secs_secs[sec]['p2p'][get_name(p1)][get_name(p1)] = 0
+                    ms.secs_secs[sec]['dist_matrix'][get_name(p1)][get_name(p1)] = 0
                     continue
                 dist_meter = ((p1[5] - p2[5]) ** 2 + (p1[6] - p2[6]) ** 2) ** 0.5
                 p1_ind = team_players.index(get_name(p1))
                 p2_ind = team_players.index(get_name(p2))
-                norm_total_dist += dist_meter
+                norm_total_dist += dist_meter**2
 
-                factor = self.data_arrays['team%d_total_off' % (ind + 1)][p1_ind][p2_ind]
+                factor = self.weight_matrices['team%d_total_off' % (ind + 1)][p1_ind][p2_ind]
                 if not hasball:
-                    factor = self.data_arrays['team%d_total_def' % (ind + 1)][p1_ind][p2_ind]
+                    factor = self.weight_matrices['team%d_total_def' % (ind + 1)][p1_ind][p2_ind]
 
                 if ms:
                     if not ms.secs_secs[sec]['p2p'].get(get_name(p1)):
                         ms.secs_secs[sec]['p2p'][get_name(p1)] = {}
+                    if not ms.secs_secs[sec]['dist_matrix'].get(get_name(p1)):
+                        ms.secs_secs[sec]['dist_matrix'][get_name(p1)] = {}
+
                     ms.secs_secs[sec]['p2p'][get_name(p1)][get_name(p2)] = dist_meter * factor
-                total_dist += dist_meter * factor
+                    ms.secs_secs[sec]['dist_matrix'][get_name(p1)][get_name(p2)] = dist_meter
+                total_dist += (dist_meter * factor)**2
                 total_count += 1
-        return norm_total_dist / float(total_count), total_dist / float(total_count)
+        return norm_total_dist**0.5, total_dist**0.5
 
     def norm_calculation(self, team_data, ind):
         if ind == 0:
@@ -260,7 +284,7 @@ class Analyzer:
         return abs(sec_min_x[5] - sec_max_x[5]), abs(sec_min_y[6] - sec_max_y[6])
 
     def calculate_dist(self, sec_data, ms=None, my_way=False):
-        hasball = self.team_ids[0] == sec_data[0][-2]
+        hasball = self.team_ids[0] == sec_data[0][-3]
         sec = sec_data[0][1]
 
         team_players1 = self.teams[0].get_player_names()
@@ -270,6 +294,29 @@ class Analyzer:
 
         if my_way:
             avg_dist1, avg_dist1_w = self.my_calculation(team_data1, team_players1, 0, hasball, ms=ms, sec=sec)
+            change = False
+            if sec == 13216:
+                change = True
+                ms.closest = avg_dist1/avg_dist1_w
+                ms.closest_sec = sec_data
+                ms.closest_scores = (avg_dist1, avg_dist1_w)
+            if sec == 13522:
+                change = True
+                ms.farthest = avg_dist1/avg_dist1_w
+                ms.farthest_sec = sec_data
+                ms.farthest_scores = (avg_dist1, avg_dist1_w)
+            if ms.farthest_sec and ms.closest_sec and change:
+                dm = np.array(Commons.dict_to_matrix(ms.secs_secs[ms.farthest_sec[0][1]]['dist_matrix'], Commons.bjk_kon, False))
+                p2p = np.array(Commons.dict_to_matrix(ms.secs_secs[ms.farthest_sec[0][1]]['p2p'], Commons.bjk_kon, False))
+                diff = np.subtract(dm, p2p)
+                pp = PitchPlotter(ms.closest_sec, ms.farthest_sec,
+                                  ms.closest_scores, ms.farthest_scores,
+                                  diff)
+                pp.display_scatter(self.weight_matrices['team1_total_off'],
+                                   self.weight_matrices['team1_closeness'],
+                                   self.weight_matrices['team1_passes'],
+                                   Commons.bjk_kon)
+
             avg_dist2, avg_dist2_w = self.my_calculation(team_data2, team_players2, 1, not hasball, ms=ms, sec=sec)
             return avg_dist1, avg_dist1_w, avg_dist2, avg_dist2_w
         else:
@@ -277,20 +324,20 @@ class Analyzer:
             avg_dist2_x, avg_dist2_y = self.norm_calculation(team_data2, 1)
             return avg_dist1_x, avg_dist1_y, avg_dist2_x, avg_dist2_y
 
-    def create_2d_arrays(self):
+    def create_2d_arrays_of_cohesions(self):
         import numpy as np
 
         def normalize(team_matrix):
             return team_matrix / float(np.amax(team_matrix))
 
         for i in range(2):
-            self.data_arrays['team%d_closeness' % (i+1)] = self.closeness_matrices[i]
-            self.data_arrays['team%d_passes' % (i + 1)] = self.pass_matrices[i]
-            self.data_arrays['team%d_marking' % (i + 1)] = self.marking_matrices[i]
-            self.data_arrays['team%d_total_off' % (i + 1)] = \
-                normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_passes' % (i + 1)])
-            self.data_arrays['team%d_total_def' % (i + 1)] = \
-                normalize(self.data_arrays['team%d_closeness' % (i+1)] + self.data_arrays['team%d_marking' % (i + 1)])
+            self.weight_matrices['team%d_closeness' % (i+1)] = self.closeness_matrices[i]
+            self.weight_matrices['team%d_passes' % (i + 1)] = self.pass_matrices[i]
+            self.weight_matrices['team%d_marking' % (i + 1)] = self.marking_matrices[i]
+            self.weight_matrices['team%d_total_off' % (i + 1)] = \
+                normalize(self.weight_matrices['team%d_closeness' % (i+1)] + self.weight_matrices['team%d_passes' % (i + 1)])
+            self.weight_matrices['team%d_total_def' % (i + 1)] = \
+                normalize(self.weight_matrices['team%d_closeness' % (i+1)] + self.weight_matrices['team%d_marking' % (i + 1)])
 
     def save_weights(self):
         pickled_data = {}
@@ -299,6 +346,7 @@ class Analyzer:
         pickled_data['marking'] = analyzer.marking_matrices
 
         # self.pickle_loader.dump_data(pickled_data)
+
 
 if __name__ == "__main__":
     import time
@@ -319,7 +367,7 @@ if __name__ == "__main__":
 
     for cnt, game in enumerate(games):
         print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-        print '%d of 306 games' % (cnt + 1)
+        print '%d of %s games' % (cnt + 1, len(games.keys()))
         try:
             analyzer = Analyzer(games[game], game_events_by_type)
             ms = MatchStatistics(analyzer)
@@ -346,17 +394,20 @@ if __name__ == "__main__":
             #
             #     importance = cls + mrk + pss
             #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
-
-            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_matrices[0])
-            analyzer.matrix_plotter.set_keys()
-            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_matrices[0])
-            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_matrices[0])
+            if not cnt:
+                team_names = Commons.bjk_kon
+            else:
+                team_names = Commons.bjk_kon
+            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.p2p_dicts[0])
+            analyzer.matrix_plotter.set_keys(team_names)
+            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.p2p_dicts[0])
+            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.p2p_dicts[0])
             # analyzer.matrix_plotter.plot()
             # scatter = PitchScatter(analyzer.game_data_collector.db_data)
             # analyzer.matrix_plotter.set_scatter(scatter)
             # analyzer.matrix_plotter.plot_scatter(importance_list)
 
-            analyzer.create_2d_arrays()
+            analyzer.create_2d_arrays_of_cohesions()
             mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
             ms.print_ms()
             ms.set_sec_keys_of_ball_data()
@@ -382,16 +433,13 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    # try:
-    #     import pickle
-    #     with open('pickles/bjk_events.pkl', "wb+") as f:
-    #         pickle.dump(game_events_by_type, f)
-    # except:
-    #     print 'Could not dump.'
-
-    import pickle
-    with open('pickles/teams_events.pkl', 'wb+') as f:
-        pickle.dump(teams_events, f)
+    # import pickle
+    # with open('pickles/teams_events_real_spread.pkl', 'wb+') as f:
+    #     pickle.dump(teams_events, f)
+    #
+    # import pickle
+    # with open('pickles/bag_of_events_real_spread.pkl', 'wb+') as f:
+    #     pickle.dump(analyzer.events_by_type, f)
 
     # for typ in game_events_by_type:
     #     home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[typ])

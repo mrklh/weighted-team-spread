@@ -15,6 +15,12 @@ venv/
 # pickles folder
 pickles/
 
+# images
+*.pdf
+analyzers/*.pdf
+*.png
+analyzers/*.png
+
 # db_config
 *.config
 

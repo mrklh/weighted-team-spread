@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pprint
+import numpy as np
 
 from scipy.stats.stats import pearsonr
 
@@ -36,6 +37,13 @@ class MatchStatistics:
         self.names = None
 
         self.sec_keys_of_ball_data = None
+
+        self.closest = 1000
+        self.closest_scores = (0, 0)
+        self.farthest = 0
+        self.farthest_scores = (0, 0)
+        self.closest_sec = 0
+        self.farthest_sec = 0
 
     def set_sec_keys_of_ball_data(self):
         self.sec_keys_of_ball_data = [x[0] for x in self.analyzer.ball_data]
@@ -169,29 +177,104 @@ class MatchStatistics:
                 for i in range(1, gap+1):
                     new_event_flow.append(event_flow[c] + (wfrob_diff/(gap+1))*i)
 
-
         new_event_flow.append(event_flow[-1])
         
         return new_event_flow
 
+    # def interpolate_dist_flow(self, time_list, dist_flow):
+    #     new_dist_flow = None
+    #     for i in range(11):
+    #         for j in range(11):
+    #             flow = [x[i][j] for x in dist_flow]
+    #             new_flow = self.interpolate_event_flow(time_list, flow)
+    #
+    #             # Ilk loopta saniye sayisi kadar 11x11 matrix olusturalim.
+    #             if not i and not j:
+    #                 new_dist_flow = [np.zeros((11, 11))] * len(new_flow)
+    #
+    #             for c, each in enumerate(new_flow):
+    #                 new_dist_flow[c][i][j] = each
+    #
+    #     return new_dist_flow
+
+    def prepare_dist_flow(self, time_list, is_home):
+        player_names = self.analyzer.teams[0 if is_home else 1].get_player_names()
+
+        dist_flow = [Commons.dict_to_matrix(self.secs_secs[x]['dist_matrix'], player_names, is_normalize=False)
+                     for x in time_list]
+        # return self.interpolate_dist_flow(time_list, dist_flow)
+        return dist_flow
+
+    def prepare_event_flow(self, time_list, is_home):
+        index = 1 if is_home else 3
+        base = self.secs_secs[time_list[0]]['dists'][index]
+
+        # uncomment to calculate real team spread
+        event_flow = [self.secs_secs[x]['dists'][index] for x in time_list]
+
+        # event_flow = [self.secs_secs[x]['dists'][index] - base for x in time_list]
+        return self.interpolate_event_flow(time_list, event_flow)
+
     def trace_game_events(self):
         '''
-        Traces all events and finds if it has continuous series of seconds of 10
+        Traces all events and finds if it has continuous series of seconds of x
+        It adds event actioned by a team with same id, adds -id for opposite team.
         '''
         for event in self.analyzer.events:
-            time_list =  self.find_beginning_of_attacking_transaction(event[0])
+            is_home = event[1] == self.analyzer.teams[0].id
+            time_list = self.find_beginning_of_attacking_transaction(event[0])
+
             if len(time_list) < 5:
                 continue
 
-            index = 1 if event[1] == self.analyzer.teams[0].id else 3
-            base = self.secs_secs[time_list[0]]['dists'][index]
-            event_flow = [self.secs_secs[x]['dists'][index] - base for x in time_list]
-            event_flow = self.interpolate_event_flow(time_list, event_flow)
+            event_flow_commit = self.prepare_event_flow(time_list, is_home)
+            dist_flow_commit = self.prepare_dist_flow(time_list, is_home)
+
+            event_flow_suffer = self.prepare_event_flow(time_list, not is_home)
+            dist_flow_suffer = self.prepare_dist_flow(time_list, not is_home)
 
             if not self.analyzer.events_by_type.get(event[-1]):
                 self.analyzer.events_by_type[event[-1]] = []
 
-            self.analyzer.events_by_type[event[-1]].append({'event': event, 'flow': event_flow})
+            if not self.analyzer.events_by_type.get(-event[-1]):
+                self.analyzer.events_by_type[-event[-1]] = []
+
+            # append format:
+            # for team actioned event.
+            # {
+            # event     : event
+            # flow      : event_flow
+            # dist_flow : distance_flow
+            # closeness : closeness matrix
+            # pass      : pass matrix
+            # }
+            # for opposite team actioned event
+            # {
+            # event     : -event
+            # flow      : event_flow
+            # dist_flow : distance_flow
+            # closeness : closeness matrix
+            # pass      : pass matrix
+            # }
+            self.analyzer.events_by_type[event[-1]].append({
+                'event': event,
+                'flow': event_flow_commit,
+                'dist_flow': dist_flow_commit,
+                'closeness': self.analyzer.weight_matrices['team%d_closeness' % (1 if is_home else 2)],
+                'passes': self.analyzer.weight_matrices['team%d_passes' % (1 if is_home else 2)]
+            })
+
+            event = (event[0],
+                     self.analyzer.teams[0].id if not is_home else self.analyzer.teams[1].id,
+                     event[2],
+                     -event[3])
+            self.analyzer.events_by_type[event[-1]].append({
+                'event': event,
+                'flow': event_flow_suffer,
+                'dist_flow': dist_flow_suffer,
+                'closeness': self.analyzer.weight_matrices['team%d_closeness' % (1 if not is_home else 2)],
+                'passes': self.analyzer.weight_matrices['team%d_passes' % (1 if not is_home else 2)]
+            })
 
     def split_game_events_to_teams(self):
         teams = {}

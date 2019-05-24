@@ -17,8 +17,8 @@ class BallData(DbDataCollector):
             else:
                 self.db_data = []
                 self.get_data_from_db()
-                self.pkl_loader.dump_data({'teams': self.db_data,
-                                           'ball_data': self.ball_data})
+                # self.pkl_loader.dump_data({'teams': self.db_data,
+                #                            'ball_data': self.ball_data})
         else:
             self.pkl_loader = PickleLoader('game_ball_%s_%s.pkl' % (self.team_abbs[0], self.team_abbs[1]))
             self.db_data = self.pkl_loader.return_data()
@@ -29,8 +29,8 @@ class BallData(DbDataCollector):
                 print 'NOT FOUND PICKLE %s' % self.pkl_loader.filename
                 self.db_data = []
                 self.get_data_from_db(self.team_names[0], self.team_names[1])
-                self.pkl_loader.dump_data({'teams': self.db_data,
-                                           'ball_data': self.ball_data})
+                # self.pkl_loader.dump_data({'teams': self.db_data,
+                #                            'ball_data': self.ball_data})
 
     def get_db_data(self):
         query = Sqls.GET_BALL_DATA

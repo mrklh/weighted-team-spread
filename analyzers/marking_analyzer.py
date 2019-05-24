@@ -72,17 +72,6 @@ class MarkingAnalyzer:
                         if self.range_calculator(tim, player, rival):
                             player_marking_rivals[player].append(rival)
 
-                # print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-                # print player_marking_rivals
-                # if sum([len(player_marking_rivals[x]) for x in player_marking_rivals]) > 4:
-                #     dp = DistPlotter([],
-                #                      [self.teams_data_collector.db_data[0].id,
-                #                       self.teams_data_collector.db_data[1].id],
-                #                      normal_dists=[norm_dist_home, norm_dist_away],
-                #                      my_dists=[my_dist_home, my_dist_away])
-                #     dp.plot_pitch()
-                #     dp.put_players_on_pitch()
-                # print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++'
                 '''
                 If nobody has ball or opposite team has ball calculate markings.
                 '''

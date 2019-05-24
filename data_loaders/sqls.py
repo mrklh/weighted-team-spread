@@ -50,7 +50,8 @@ class Sqls:
         
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
-              t1.ID = m.HOME_ID
+              t1.ID = m.HOME_ID AND
+              t1.ID = 3 AND t2.ID = 101
         GROUP BY(p.MATCH_ID)
     """
 

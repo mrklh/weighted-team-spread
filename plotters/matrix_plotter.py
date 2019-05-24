@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from commons import Commons
-
+import pprint
 
 class MatrixPlotter:
     def __init__(self):
@@ -16,8 +16,8 @@ class MatrixPlotter:
         self.scatter = None
         self.matrix = None
 
-    def set_keys(self):
-        self.keys = [key for key in self.closeness_matrix]
+    def set_keys(self, keys):
+        self.keys = keys
 
     def set_closeness_matrix(self, matrix):
         self.closeness_matrix = matrix
@@ -31,48 +31,76 @@ class MatrixPlotter:
     def set_scatter(self, scatter):
         self.scatter = scatter
 
+    def shorten_names(self):
+        names = []
+        for name in self.keys:
+            try:
+                name = name.strip().split(' ')[-1]
+            except:
+                name = unicode.strip(name)
+            names.append(name)
+
+        return names
+
     def plot(self):
-        grid = gridspec.GridSpec(1, 3)
+        print '#' * 49
+        print '#' * 49
+        pprint.pprint('PLOTTING')
+        print '#' * 49
+        print '#' * 49
+        names = self.shorten_names()
+        grid = gridspec.GridSpec(1, 1)
         fig = plt.figure()
 
         ax1 = fig.add_subplot(grid[0, 0])
+        plt.xticks(size=15)
+        plt.yticks(size=15)
         matrix = Commons.dict_to_matrix(self.closeness_matrix, self.keys)
         self.matrix = matrix
-        im = ax1.imshow(matrix, cmap='inferno')
+        im = ax1.imshow(matrix, cmap='Greens')
         plt.colorbar(im)
-        ax1.set_title("Closeness Matrix")
+        ax1.set_title("Closeness Matrix", size=15)
         ax1.set_xticks(np.arange(0, 11, 1))
         ax1.set_yticks(np.arange(0, 11, 1))
-        ax1.set_xticklabels(self.keys)
-        ax1.set_yticklabels(self.keys)
+        ax1.set_xticklabels(names)
+        ax1.set_yticklabels(names)
         for tick in ax1.get_xticklabels():
-            tick.set_rotation(-45)
+            tick.set_rotation(-90)
 
-        ax2 = fig.add_subplot(grid[0, 1])
+        plt.savefig("close1.pdf", bbox_inches='tight')
+
+        grid = gridspec.GridSpec(1, 1)
+        fig = plt.figure()
+
+        ax2 = fig.add_subplot(grid[0, 0])
         matrix = Commons.dict_to_matrix(self.pass_matrix, self.keys)
-        im = ax2.imshow(matrix, cmap='inferno')
+        im = ax2.imshow(matrix, cmap='Greens')
         plt.colorbar(im)
-        ax2.set_title("Pass Counts Matrix")
+        ax2.set_title("Pass Counts Matrix", size=15)
         ax2.set_xticks(np.arange(0, 11, 1))
         ax2.set_yticks(np.arange(0, 11, 1))
-        ax2.set_xticklabels(self.keys)
-        ax2.set_yticklabels(self.keys)
+        ax2.set_xticklabels(names)
+        ax2.set_yticklabels(names)
         for tick in ax2.get_xticklabels():
-            tick.set_rotation(-45)
+            tick.set_rotation(-90)
 
-        ax2 = fig.add_subplot(grid[0, 2])
+        plt.savefig("pass1.pdf", bbox_inches='tight')
+        grid = gridspec.GridSpec(1, 1)
+        fig = plt.figure()
+
+        ax2 = fig.add_subplot(grid[0, 0])
         matrix = Commons.dict_to_matrix(self.marking_matrix, self.keys)
-        im = ax2.imshow(matrix, cmap='inferno')
+        im = ax2.imshow(matrix, cmap='Greens')
         plt.colorbar(im)
-        ax2.set_title("Marking Matrix")
+        ax2.set_title("Marking Matrix", size=15)
         ax2.set_xticks(np.arange(0, 11, 1))
         ax2.set_yticks(np.arange(0, 11, 1))
-        ax2.set_xticklabels(self.keys)
-        ax2.set_yticklabels(self.keys)
+        ax2.set_xticklabels(names)
+        ax2.set_yticklabels(names)
         for tick in ax2.get_xticklabels():
-            tick.set_rotation(-45)
+            tick.set_rotation(-90)
 
-        plt.show()
+        plt.savefig("mark1.pdf", bbox_inches='tight')
 
     def plot_weights(self):
         # team_eleven = {

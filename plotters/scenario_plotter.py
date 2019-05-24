@@ -102,7 +102,7 @@ class ScenarioPlotter:
 
                 data[player[-1]].append((player[5], player[6]))
 
-        self.hasball_data = [x[0][-2] for x in self.sec_data_list]
+        self.hasball_data = [x[0][-3] for x in self.sec_data_list]
 
     def initialize_convex_data(self):
         for sec_data in self.sec_data_list:
