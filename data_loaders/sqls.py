@@ -34,6 +34,17 @@ class Sqls:
         ORDER BY half, minute, second
     """
 
+    GET_BALL_POS_DATA = """
+    SELECT half*10000 + minute*100 + second, half, minute, 
+       second, d.X_POS, d.Y_POS, d.hasball_team_id
+    FROM tf_match_persecdata d, tf_match m
+    WHERE d.team_id = 0 AND
+          d.match_id = m.id AND 
+          d.match_id = 60648 AND
+          (d.X_POS != 0 AND d.Y_POS != 0)
+    ORDER BY half, minute, second
+    """
+
     GET_TEAM_DATA = """
         SELECT id FROM td_team WHERE name = '%s'
     """
