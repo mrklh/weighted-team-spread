@@ -35,10 +35,15 @@ class PitchValue:
         self.def_players_data_at_sec = []
         self.off_players_data_at_sec = []
         self.results = np.zeros((50, 50))
-        with open('pickles/pitch_value_data.pkl', 'rb+') as f:
+        with open('pickles/pitch_value_data2.pkl', 'rb+') as f:
             self.data = pickle.load(f)
 
         self.get_ball_pos()
+        for each in self.data:
+            try:
+                print each[0][1]
+            except:
+                print "Problem"
         self.ball_pos_dict = {x[0]: (x[4], x[5]) for x in
                               filter(lambda x: x[0] in [x[0][1] for x in self.data], self.ball_pos_data)}
 
@@ -99,18 +104,24 @@ class PitchValue:
             [self.get_xy(sec1)[0] + (sec2[X] - sec1[X]) / 2, self.get_xy(sec1)[1] + (sec2[Y] - sec1[Y]) / 2])
 
     def get_defender_positions(self, sec):
-        def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, pv.data[0])]
-        self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in pv.data[sec:sec+2]] for z in def_players]
+        def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, self.data[0])]
+        self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in def_players]
 
     def get_offense_positions(self, sec):
-        off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, pv.data[0])]
-        self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in pv.data[sec:sec+2]] for z in off_players]
+        print "#" * 50
+        print "#" * 50
+        for each in self.data[0]:
+            print each
+        print "#" * 50
+        print "#" * 50
+        off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, self.data[0])]
+        self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
 
     def initialize(self):
         for i, x in enumerate(self.X_RANGE):
             for j, y in enumerate(self.Y_RANGE):
                 ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
-                self.results[i][j] = (x - ball_x) / 4000
+                self.results[i][j] = (x - ball_x) / 3000
 
     def add_defensive_players(self):
         for player in self.def_players_data_at_sec:
@@ -207,7 +218,7 @@ class PitchValue:
     def show_all(self, showed_sec):
         self.get_defender_positions(showed_sec)
         self.get_offense_positions(showed_sec)
-        # self.initialize()
+        self.initialize()
         self.add_defensive_players()
         # self.add_behind_of_players()
         self.add_goal()
@@ -219,7 +230,7 @@ class PitchValue:
 
 # pv = PitchValue()
 # values = []
-# for i in range(9):
+# for i in range(1):
 #     print "#" * 50
 #     print "#" * 50
 #     pprint.pprint("SECOND %d" % (i+1))
@@ -239,54 +250,54 @@ class PitchValue:
 
 
 
-listt = [
-    [[70, 33], [71, 34], 10],
-    [[75, 30], [76, 31], 4],
-    [[80, 25], [81, 26], 3],
-    [[84, 20], [83, 21], 2],
-    [[84, 15], [85, 16], 1],
-    [[75, 11], [74, 10], 5],
-    [[70, 7], [71, 6], 40],
-    [[60, 7], [61, 6], 3],
-    [[55, 7], [54, 8], 2],
-    [[50, 15], [49, 16], 1],
-    [[45, 20], [46, 21], 5],
-    [[48, 24], [47, 23], 22],
-    [[55, 30], [54, 31], 3],
-    [[60, 33], [61, 32], 2]
-]
-pv = PitchValue()
-
-ball = [0] * 11
-ball[X] = 68.07
-ball[Y] = 18.90
-
-for each in listt:
-    sec1 = [0] * 11
-    sec1[X] = each[0][0]
-    sec1[Y] = each[0][1]
-    sec1[SPEED] = each[2]
-    sec1[SEC] = 0
-    sec2 = [0] * 11
-    sec2[X] = each[1][0]
-    sec2[Y] = each[1][1]
-    sec2[SPEED] = 1.60
-    sec2[SEC] = 1
-    pv.ball_pos_dict[0] = ball
-
-    print "Add scenario Position %.3f-%.3f" % (sec1[X], sec1[Y])
-    for i, x in enumerate(pv.X_RANGE):
-        for j, y in enumerate(pv.Y_RANGE):
-            if abs(x - sec1[X]) + abs(y - sec1[Y]) < 3:
-                print "%.2f: x, %.2f: y score: %.6f" % (x, y, pv.calculate_influence(sec1, sec2, ref_p=[x, y]))
-            pv.results[i][j] += pv.calculate_influence(sec1, sec2, ref_p=[x, y])
-
-pv.results = np.array(pv.results).transpose()
-fig, axs = plt.subplots(1, 1)
-im = axs.imshow(pv.results, extent=[0, 110, 0, 68])
-plt.colorbar(im)
-for each in listt:
-    plt.scatter(each[0][0], each[0][1], c='green', s=100)
-    plt.scatter(each[1][0], each[1][1], c='red', s=100)
-    plt.scatter(ball[X], ball[Y], c='white', s=100)
-plt.show()
+# listt = [
+#     [[70, 33], [71, 34], 10],
+#     [[75, 30], [76, 31], 4],
+#     [[80, 25], [81, 26], 3],
+#     [[84, 20], [83, 21], 2],
+#     [[84, 15], [85, 16], 1],
+#     [[75, 11], [74, 10], 5],
+#     [[70, 7], [71, 6], 40],
+#     [[60, 7], [61, 6], 3],
+#     [[55, 7], [54, 8], 2],
+#     [[50, 15], [49, 16], 1],
+#     [[45, 20], [46, 21], 5],
+#     [[48, 24], [47, 23], 22],
+#     [[55, 30], [54, 31], 3],
+#     [[60, 33], [61, 32], 2]
+# ]
+# pv = PitchValue()
+#
+# ball = [0] * 11
+# ball[X] = 68.07
+# ball[Y] = 18.90
+#
+# for each in listt:
+#     sec1 = [0] * 11
+#     sec1[X] = each[0][0]
+#     sec1[Y] = each[0][1]
+#     sec1[SPEED] = each[2]
+#     sec1[SEC] = 0
+#     sec2 = [0] * 11
+#     sec2[X] = each[1][0]
+#     sec2[Y] = each[1][1]
+#     sec2[SPEED] = 1.60
+#     sec2[SEC] = 1
+#     pv.ball_pos_dict[0] = ball
+#
+#     print "Add scenario Position %.3f-%.3f" % (sec1[X], sec1[Y])
+#     for i, x in enumerate(pv.X_RANGE):
+#         for j, y in enumerate(pv.Y_RANGE):
+#             if abs(x - sec1[X]) + abs(y - sec1[Y]) < 3:
+#                 print "%.2f: x, %.2f: y score: %.6f" % (x, y, pv.calculate_influence(sec1, sec2, ref_p=[x, y]))
+#             pv.results[i][j] += pv.calculate_influence(sec1, sec2, ref_p=[x, y])
+#
+# pv.results = np.array(pv.results).transpose()
+# fig, axs = plt.subplots(1, 1)
+# im = axs.imshow(pv.results, extent=[0, 110, 0, 68])
+# plt.colorbar(im)
+# for each in listt:
+#     plt.scatter(each[0][0], each[0][1], c='green', s=100)
+#     plt.scatter(each[1][0], each[1][1], c='red', s=100)
+#     plt.scatter(ball[X], ball[Y], c='white', s=100)
+# plt.show()

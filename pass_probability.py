@@ -21,8 +21,9 @@ NAME = 11
 X = 5
 Y = 6
 
+BALL_SPEED = 18
 
-class PitchValue:
+class PassProbability:
     X_DOWN = 0
     X_UP = 110
     Y_DOWN = 68
@@ -35,7 +36,7 @@ class PitchValue:
         self.def_players_data_at_sec = []
         self.off_players_data_at_sec = []
         self.results = np.zeros((50, 50))
-        with open('pickles/pitch_value_data.pkl', 'rb+') as f:
+        with open('pickles/pitch_value_data2.pkl', 'rb+') as f:
             self.data = pickle.load(f)
 
         self.get_ball_pos()
@@ -44,9 +45,9 @@ class PitchValue:
 
     @staticmethod
     def l2(p1, p2, printt=False):
-        if printt:
-            print "(p1[0] - p2[0]) ** 2", (p1[0] - p2[0]) ** 2
-            print "(p1[1] - p2[1]) ** 2", (p1[1] - p2[1]) ** 2
+        # if printt:
+        #     print "(p1[0] - p2[0]) ** 2", (p1[0] - p2[0]) ** 2
+        #     print "(p1[1] - p2[1]) ** 2", (p1[1] - p2[1]) ** 2
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
     @staticmethod
@@ -75,10 +76,10 @@ class PitchValue:
                               (ref_p - self.calculate_muit(sec1, sec2)))
         exp_part = math.exp(-0.5 * (np.matmul(exp_part1.transpose(), exp_part2)))
         inf_part1 = 1.0 / ((((2 * math.pi) ** 2) * np.linalg.det(covit)) ** 0.5)
-        if printt:
-            print "covit", covit
-            print "np.linalg.det(covit)**0.5", np.linalg.det(covit)**0.5
-            print "inf_part1", inf_part1
+        # if printt:
+        #     print "covit", covit
+        #     print "np.linalg.det(covit)**0.5", np.linalg.det(covit)**0.5
+        #     print "inf_part1", inf_part1
 
         if factor < 1:
             return min(((inf_part1 * exp_part) ** factor) / (3 / factor), 0.050)
@@ -87,29 +88,32 @@ class PitchValue:
     def calculate_covit(self, sec1, sec2, printt=False):
         rotit = self.calculate_rotit(self.get_xy(sec1), self.get_xy(sec2), printt)
         sit = self.calculate_sit(sec1, printt)
-        if printt:
-            print "rotit", rotit
-            print "sit", sit
+        # if printt:
+        #     print "rotit", rotit
+        #     print "sit", sit
         return reduce(np.matmul, [rotit, sit, sit, np.linalg.inv(rotit)])
 
     def calculate_rotit(self, p1, p2, printt=False):
-        if printt:
-            print "self.cos(p1, p2)", self.cos(p1, p2)
-            print "self.sin(p1, p2)", self.sin(p1, p2)
+        # if printt:
+        #     print "self.cos(p1, p2)", self.cos(p1, p2)
+        #     print "self.sin(p1, p2)", self.sin(p1, p2)
         return np.array([[self.cos(p1, p2), -self.sin(p1, p2)], [self.sin(p1, p2), self.cos(p1, p2)]])
 
     def calculate_sit(self, sec, printt=False):
-        rit_score = self.rit((sec[X], sec[Y]), self.ball_pos_dict[sec[SEC]], printt)
+        rit_score = self.calculate_rit((sec[X], sec[Y]), self.ball_pos_dict[sec[SEC]], printt)
+        # if printt:
+        #     print "SPEED", sec[SPEED]
+        #     print "X Y", sec[X], sec[Y]
         scaling = rit_score * (sec[SPEED] ** 2 / 169)
 
         return np.array([[(rit_score + scaling) / 2, 0], [0, (rit_score - scaling) / 2]])
 
-    def rit(self, pp, bp, printt=False):
-        if printt:
-            print "pp", pp
-            print "bp", bp
-            print "self.l2(pp, bp)", self.l2(pp, bp, printt)
-            print "min((self.l2(pp, bp) ** 3) / 1000.0 + 4, 10)", min((self.l2(pp, bp) ** 3) / 1000.0 + 4, 10)
+    def calculate_rit(self, pp, bp, printt=False):
+        # if printt:
+        #     print "pp", pp
+        #     print "bp", bp
+        #     print "self.l2(pp, bp)", self.l2(pp, bp, printt)
+        #     print "min((self.l2(pp, bp) ** 3) / 1000.0 + 4, 10)", min((self.l2(pp, bp) ** 3) / 1000.0 + 4, 10)
         return min((self.l2(pp, bp) ** 3) / 1000.0 + 4, 10)
 
     def calculate_muit(self, sec1, sec2):
@@ -119,13 +123,13 @@ class PitchValue:
             [sec1[X] + ((sec1[SPEED]*x_factor) / 2), sec1[Y] + ((sec1[SPEED]*y_factor) / 2)])
 
     def get_defender_positions(self, sec):
-        def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, pv.data[0])]
+        def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, self.data[0])]
         # def_players = ['Ferhat']
-        self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in pv.data[sec:sec+2]] for z in def_players]
+        self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in def_players]
 
     def get_offense_positions(self, sec):
-        off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, pv.data[0])]
-        self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in pv.data[sec:sec+2]] for z in off_players]
+        off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, self.data[0])]
+        self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
 
     def initialize(self):
         for i, x in enumerate(self.X_RANGE):
@@ -141,21 +145,23 @@ class PitchValue:
             ball[X] = self.ball_pos_dict[sec1[SEC]][0]
             ball[Y] = self.ball_pos_dict[sec1[SEC]][1]
 
-            sec1_speed_x = sec1[SPEED] * pv.cos(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
-                                                                                                pv.get_xy(sec1))
-            sec1_speed_y = sec1[SPEED] * pv.sin(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
-                                                                                                pv.get_xy(sec1))
+            sec1_speed_x = sec1[SPEED] * self.cos(self.get_xy(sec1), self.get_xy(sec2)) + BALL_SPEED * self.cos(self.get_xy(ball),
+                                                                                                self.get_xy(sec1))
+            sec1_speed_y = sec1[SPEED] * self.sin(self.get_xy(sec1), self.get_xy(sec2)) + BALL_SPEED * self.sin(self.get_xy(ball),
+                                                                                                self.get_xy(sec1))
 
-            exxp = min(25, math.exp(1 / pv.l2(pv.get_xy(sec1), pv.get_xy(ball)) ** 0.1) / 2 - 0.3)
-            sec2[X] += 25 * pv.cos(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
-            sec2[Y] += 25 * pv.sin(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
+            exxp = min(25, math.exp(1 / self.l2(self.get_xy(sec1), self.get_xy(ball)) ** 0.1) / 2 - 0.3)
+            pprint.pprint(exxp)
+            sec2[X] += BALL_SPEED * self.cos(self.get_xy(ball), self.get_xy(sec1)) * exxp
+            sec2[Y] += BALL_SPEED * self.sin(self.get_xy(ball), self.get_xy(sec1)) * exxp
             sec1[SPEED] = (sec1_speed_x ** 2 + sec1_speed_y ** 2) ** 0.5
-
+            printt = True
             for i, x in enumerate(self.X_RANGE):
                 for j, y in enumerate(self.Y_RANGE):
-                    self.results[i][j] += self.calculate_influence(sec1, sec2, ref_p=[x, y], factor=0.3)
-            if c>0:
-                break
+                    self.results[i][j] -= self.calculate_influence(sec1, sec2, ref_p=[x, y], factor=0.3, printt=printt)
+                    printt = False
+            # if c>0:
+            #     break
 
     def normalize(self):
         maxx = np.max(self.results)
@@ -173,18 +179,21 @@ class PitchValue:
         else:
             results = np.array(self.results).transpose()
         fig, axs = plt.subplots(1, 1)
+        axs.set_xticks(np.linspace(0, 110, 23))
+        axs.set_yticks(np.linspace(0, 68, 13))
         im = axs.imshow(results, extent=[0, 110, 0, 68])
         plt.colorbar(im)
         self.scat_players_and_ball(sec)
         # plt.savefig('defensive_influence.pdf')
+        plt.grid()
         plt.show()
 
     def scat_players_and_ball(self, sec):
         for c, player in enumerate(self.def_players_data_at_sec):
             x, y = self.get_xy(player[0])
             plt.scatter(x, y, c='red', s=100)
-            if c > 0:
-                break
+            # if c > 0:
+            #     break
         # for player in self.off_players_data_at_sec:
         #     x, y = self.get_xy(player[0])
         #     plt.scatter(x, y, c='green', s=100)
@@ -203,7 +212,7 @@ class PitchValue:
         # self.show()
 
 
-# pv = PitchValue()
+# pp = PassProbability()
 # values = []
 # for i in range(1):
 #     print "#" * 50
@@ -223,68 +232,69 @@ class PitchValue:
 ########                     SCENARIO                     ##############
 ########################################################################
 
-listt = [
-    # [[70, 33], [71, 34]],
-    # [[75, 30], [76, 31]],
-    # [[80, 25], [81, 26]],
-    # [[84, 20], [83, 21]],
-    # [[84, 15], [85, 16]],
-    # [[75, 11], [74, 10]],
-    # [[70, 7], [71, 6]],
-    # [[60, 7], [61, 6]],
-    # [[55, 7], [54, 8]],
-    # [[50, 15], [49, 16]],
-    # [[45, 20], [46, 21]],
-    # [[48, 24], [47, 23]],
-    [[55, 30], [54, 31]],
-    [[60, 33], [61, 32]]
-]
-pv = PitchValue()
-
-ball = [0] * 11
-ball[X] = 68.07
-ball[Y] = 18.90
-
-for each in listt:
-    for i, x in enumerate(pv.X_RANGE):
-        for j, y in enumerate(pv.Y_RANGE):
-            pv.results[i][j] = 0
-    sec1 = [0] * 11
-    sec1[X] = each[0][0]
-    sec1[Y] = each[0][1]
-    sec1[SPEED] = 1
-    sec1[SEC] = 0
-    sec2 = [0] * 11
-    sec2[X] = each[1][0]
-    sec2[Y] = each[1][1]
-    sec2[SPEED] = 1.60
-    sec2[SEC] = 1
-    pv.ball_pos_dict[0] = [ball[X], ball[Y]]
-    sec1_speed_x = sec1[SPEED] * pv.cos(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
-                                                                                        pv.get_xy(sec1))
-    sec1_speed_y = sec1[SPEED] * pv.sin(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
-                                                                                        pv.get_xy(sec1))
-
-    exxp = min(25, math.exp(1 / pv.l2(pv.get_xy(sec1), pv.get_xy(ball)) ** 0.1) / 2 - 0.3)
-    sec2[X] += 25 * pv.cos(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
-    sec2[Y] += 25 * pv.sin(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
-    sec1[SPEED] = (sec1_speed_x ** 2 + sec1_speed_y ** 2) ** 0.5
-
-    print "\n\nAdd scenario Position %.3f-%.3f" % (sec1[X], sec1[Y])
-    printed = False
-    for i, x in enumerate(pv.X_RANGE):
-        for j, y in enumerate(pv.Y_RANGE):
-            if abs(x - sec1[X]) + abs(y - sec1[Y]) < 2 and not printed:
-                print "%.2f: x, %.2f: y speed: %.2f score: %.6f" % (x, y, sec1[SPEED], pv.calculate_influence(sec1, sec2, ref_p=[x, y], printt=True))
-                printed = True
-            pv.results[i][j] += pv.calculate_influence(sec1, sec2, ref_p=[x, y])
-
-    pv.results = np.array(pv.results).transpose()
-    fig, axs = plt.subplots(1, 1)
-    im = axs.imshow(pv.results, extent=[0, 110, 0, 68])
-    plt.colorbar(im)
-    # for each in listt:
-    plt.scatter(each[0][0], each[0][1], c='green', s=100)
-    plt.scatter(each[1][0], each[1][1], c='red', s=100)
-    plt.scatter(ball[X], ball[Y], c='white', s=100)
-    plt.show()
+# listt = [
+#     [[70, 33], [71, 34]],
+#     [[75, 30], [76, 31]],
+#     [[80, 25], [81, 26]],
+#     [[84, 20], [83, 21]],
+#     [[84, 15], [85, 16]],
+#     [[75, 11], [74, 10]],
+#     [[70, 7], [71, 6]],
+#     [[60, 7], [61, 6]],
+#     [[55, 7], [54, 8]],
+#     [[50, 15], [49, 16]],
+#     [[45, 20], [46, 21]],
+#     [[48, 24], [47, 23]],
+#     [[55, 30], [54, 31]],
+#     [[60, 33], [61, 32]]
+# ]
+# pv = PitchValue()
+#
+# ball = [0] * 11
+# ball[X] = 68.07
+# ball[Y] = 18.90
+#
+# for each in listt:
+#     # for i, x in enumerate(pv.X_RANGE):
+#     #     for j, y in enumerate(pv.Y_RANGE):
+#     #         pv.results[i][j] = 0
+#     sec1 = [0] * 11
+#     sec1[X] = each[0][0]
+#     sec1[Y] = each[0][1]
+#     sec1[SPEED] = 1
+#     sec1[SEC] = 0
+#     sec2 = [0] * 11
+#     sec2[X] = each[1][0]
+#     sec2[Y] = each[1][1]
+#     sec2[SPEED] = 1.60
+#     sec2[SEC] = 1
+#     pv.ball_pos_dict[0] = [ball[X], ball[Y]]
+#     sec1_speed_x = sec1[SPEED] * pv.cos(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
+#                                                                                         pv.get_xy(sec1))
+#     sec1_speed_y = sec1[SPEED] * pv.sin(pv.get_xy(sec1), pv.get_xy(sec2)) + 25 * pv.cos(pv.get_xy(ball),
+#                                                                                         pv.get_xy(sec1))
+#
+#     exxp = min(25, math.exp(1 / pv.l2(pv.get_xy(sec1), pv.get_xy(ball)) ** 0.1) / 2 - 0.3)
+#     sec2[X] += 25 * pv.cos(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
+#     sec2[Y] += 25 * pv.sin(pv.get_xy(ball), pv.get_xy(sec1)) * exxp
+#     # sec1[SPEED] = (sec1_speed_x ** 2 + sec1_speed_y ** 2) ** 0.5
+#     sec1[SPEED] = 20
+#
+#     print "\n\nAdd scenario Position %.3f-%.3f" % (sec1[X], sec1[Y])
+#     printed = False
+#     for i, x in enumerate(pv.X_RANGE):
+#         for j, y in enumerate(pv.Y_RANGE):
+#             if abs(x - sec1[X]) + abs(y - sec1[Y]) < 2 and not printed:
+#                 print "%.2f: x, %.2f: y speed: %.2f score: %.6f" % (x, y, sec1[SPEED], pv.calculate_influence(sec1, sec2, ref_p=[x, y], printt=True))
+#                 printed = True
+#             pv.results[i][j] += pv.calculate_influence(sec1, sec2, ref_p=[x, y])
+#
+# pv.results = np.array(pv.results).transpose()
+# fig, axs = plt.subplots(1, 1)
+# im = axs.imshow(pv.results, extent=[0, 110, 0, 68])
+# plt.colorbar(im)
+# for each in listt:
+#     plt.scatter(each[0][0], each[0][1], c='green', s=100)
+#     plt.scatter(each[1][0], each[1][1], c='red', s=100)
+#     plt.scatter(ball[X], ball[Y], c='white', s=100)
+# plt.show()

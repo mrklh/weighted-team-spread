@@ -7,6 +7,7 @@ import numpy as np
 
 from data_loaders.get_a_game_data import GameData
 from data_loaders.get_a_game_ball_data import BallData
+from pitch_value import PitchValue
 from analyzers.closeness_analyzer import ClosenessAnalyzer
 from analyzers.marking_analyzer import MarkingAnalyzer
 from analyzers.pass_analyzer import PassAnalyzer
@@ -102,6 +103,13 @@ class Analyzer:
     def calculate_closeness(self):
         self.game_data_collector.get_data(file_name=None)
         self.game_data = self.game_data_collector.game_data
+        secs = map(lambda x: analyzer.get_a_sec_data_only(analyzer.game_data, x), range(13500, 13530))
+        import pickle
+
+        with open('pickles/pitch_value_data2.pkl', 'wb+') as f:
+            pickle.dump(secs, f)
+
+        return
         self.teams = self.game_data_collector.db_data
         self.events = self.game_data_collector.events
         self.team_ids = [self.teams[0].id, self.teams[1].id]
@@ -385,6 +393,11 @@ if __name__ == "__main__":
                 analyzer.calculate_closeness()
                 analyzer.calculate_passes()
 
+            # pv = PitchValue(analyzer)
+            # pv.plot_pitch_with_values()
+
+            break
+
             # importance_list = []
             # for i in range(0, 2):
             #     players = analyzer.game_data_collector.db_data[i].get_player_names()
@@ -433,22 +446,22 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    # import pickle
-    # with open('pickles/teams_events_real_spread.pkl', 'wb+') as f:
-    #     pickle.dump(teams_events, f)
-    #
-    # import pickle
-    # with open('pickles/bag_of_events_real_spread.pkl', 'wb+') as f:
-    #     pickle.dump(analyzer.events_by_type, f)
+    import pickle
+    with open('pickles/teams_events_real_spread.pkl', 'wb+') as f:
+        pickle.dump(teams_events, f)
 
-    # for typ in game_events_by_type:
-    #     home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[typ])
-    #     for event in home_events:
-    #         plt.plot(event['flow'])
-    #     plt.title('%d event %d count' % (typ, len(home_events)))
-    #     plt.show()
-    #
-    # print mine, nrml
+    import pickle
+    with open('pickles/bag_of_events_real_spread.pkl', 'wb+') as f:
+        pickle.dump(analyzer.events_by_type, f)
+
+    for typ in game_events_by_type:
+        home_events = filter(lambda x: x['event'][1] == 3, game_events_by_type[typ])
+        for event in home_events:
+            plt.plot(event['flow'])
+        plt.title('%d event %d count' % (typ, len(home_events)))
+        plt.show()
+
+    print mine, nrml
 
 
 ###################################################################################################
