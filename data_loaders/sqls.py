@@ -3,7 +3,7 @@
 class Sqls:
     GET_GAME_DATA = """
     SELECT r.team_id, half*10000 + minute*100 + second, half, minute, 
-           second, d.X_POS, d.Y_POS, d.JERSEY_NUMBER, d.hasball_team_id, r.starting_status, p.name
+           second, d.X_POS, d.Y_POS, d.JERSEY_NUMBER, d.hasball_team_id, r.starting_status, d.SPEED, p.name
         FROM tf_match_persecdata d, td_player p, tf_roster r, td_team t1, td_team t2, tf_match m
         WHERE d.team_id != 0 AND
               d.match_id = m.id AND 
@@ -15,7 +15,10 @@ class Sqls:
               t2.name = %s AND
               d.team_id = r.team_id AND
               d.match_id = r.match_id AND
-              (d.X_POS != 0 AND d.Y_POS != 0)
+              (d.X_POS != 0 AND d.Y_POS != 0) AND 
+              d.X_POS IS NOT NULL AND d.Y_POS IS NOT NULL
+              AND d.team_id IS NOT NULL 
+              AND m.SEASON_ID = 11075
         ORDER BY half, minute, second, r.team_id, name
     """
 
@@ -30,7 +33,9 @@ class Sqls:
               t1.name = %s AND
               t2.name = %s AND
               (d.X_POS != 0 AND d.Y_POS != 0) AND
+              (d.X_POS IS NOT NULL AND d.Y_POS IS NOT NULL) AND
               d.hasball_team_id != 0
+              AND m.SEASON_ID = 11075
         ORDER BY half, minute, second
     """
 
@@ -40,8 +45,10 @@ class Sqls:
     FROM tf_match_persecdata d, tf_match m
     WHERE d.team_id = 0 AND
           d.match_id = m.id AND 
-          d.match_id = 60648 AND
+          d.match_id = %d AND
+          X_POS IS NOT NULL AND Y_POS IS NOT NULL AND
           (d.X_POS != 0 AND d.Y_POS != 0)
+          AND m.SEASON_ID = 11075
     ORDER BY half, minute, second
     """
 
@@ -52,7 +59,14 @@ class Sqls:
     GET_PLYR_DATA = """
         select r.team_id, r.jersey_number, p.name from tf_roster r, tf_match m, td_player p 
         where r.MATCH_ID = m.id and m.id = %s and r.PLAYER_ID = p.id
+        AND m.SEASON_ID = 11075
         and r.STARTING_STATUS = 1
+    """
+
+    GET_FIRST_ELEVEN = """
+    SELECT r.JERSEY_NUMBER, p.NAME FROM tr_18.tf_roster r, tr_18.td_player p 
+    WHERE r.PLAYER_ID = p.ID AND r.MATCH_ID = %s AND r.STARTING_STATUS = 1
+    AND TEAM_ID = 3 ORDER BY r.POSITION_ID, JERSEY_NUMBER
     """
 
     GET_GAMES_DATA = """
@@ -62,8 +76,9 @@ class Sqls:
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
-              t1.ID = 3 AND t2.ID = 101
-        GROUP BY(p.MATCH_ID)
+              (HOME_ID = 3 AND AWAY_ID = 105)
+              AND m.SEASON_ID = 11075
+        GROUP BY(p.MATCH_ID) ORDER BY m.MATCH_DATE DESC
     """
 
     GET_TEAM_LENGTH_DATA = """
@@ -94,4 +109,8 @@ class Sqls:
     and r1.match_id = e.match_id and r2.match_id = e.match_id
     and r1.team_id = e.team_id and r2.team_id = e.team_id and
     p1.id = r1.player_id and p2.id = r2.player_id
+    """
+
+    GET_SPRINT_DATA = """
+    select e.* from curr_hirsprint_data_exp e, tf_match m where e.MATCH_ID = m.ID and m.ID = %d and IS_SPRINT=1
     """

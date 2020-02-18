@@ -7,7 +7,7 @@ import numpy as np
 
 from data_loaders.get_a_game_data import GameData
 from data_loaders.get_a_game_ball_data import BallData
-from pitch_value import PitchValue
+# from pitch_value import PitchValue
 from analyzers.closeness_analyzer import ClosenessAnalyzer
 from analyzers.marking_analyzer import MarkingAnalyzer
 from analyzers.pass_analyzer import PassAnalyzer
@@ -18,10 +18,26 @@ from data_loaders.pickle_loader import PickleLoader
 from plotters.pitch_plotter import PitchPlotter
 from data_loaders.db_data_collector import DbDataCollector
 from commons import Commons
+from usable_high_value_area import UHVA
 
 import pprint
 
 import matplotlib.pyplot as plt
+
+S_TEAM_ID = 2
+S_JERSEY = 3
+S_HALF = 9
+S_MIN = 10
+S_SEC = 11
+S_END_X = 16
+S_END_Y = 17
+S_HOME_LEFT = -4
+
+P_TEAM_ID = 0
+P_X = 5
+P_Y = 6
+P_JERSEY = 7
+P_NAME = 11
 
 class Reporter:
     def __init__(self, game, nh_x, nh_y, na_x, na_y, mh_w, ma_w):
@@ -73,6 +89,9 @@ class Analyzer:
         self.sec_splitter_index = 0
         self.weight_matrices = {}
         self.printed = False
+
+        self.team_names = []
+
         self.pickle_loader = PickleLoader("matrix_%s_%s" % (Commons.get_team_abb(game_info['home']['name']),
                                                             Commons.get_team_abb(game_info['away']['name'])))
 
@@ -103,13 +122,11 @@ class Analyzer:
     def calculate_closeness(self):
         self.game_data_collector.get_data(file_name=None)
         self.game_data = self.game_data_collector.game_data
-        secs = map(lambda x: analyzer.get_a_sec_data_only(analyzer.game_data, x), range(13500, 13530))
-        import pickle
-
-        with open('pickles/pitch_value_data2.pkl', 'wb+') as f:
-            pickle.dump(secs, f)
-
-        return
+        # secs = map(lambda x: analyzer.get_a_sec_data_only(analyzer.game_data, x), range(10000, 14824) + range(24500, 29609))
+        # import pickle
+        #
+        # with open('pickles/pitch_value_data2.pkl', 'wb+') as f:
+        #     pickle.dump(secs, f)
         self.teams = self.game_data_collector.db_data
         self.events = self.game_data_collector.events
         self.team_ids = [self.teams[0].id, self.teams[1].id]
@@ -122,6 +139,12 @@ class Analyzer:
     def calculate_passes(self):
         self.ball_data_collector.get_data(file_name=None)
         self.ball_data = self.ball_data_collector.ball_data
+        # secs = map(lambda x: analyzer.get_a_sec_data_only(analyzer.ball_data, x), range(10000, 14824) + range(24500, 29609))
+        # import pickle
+        #
+        # with open('pickles/ball_data2.pkl', 'wb+') as f:
+        #     pickle.dump(secs, f)
+
         if analyzer.pickled:
             return
         self.pass_analyzer = PassAnalyzer(self)
@@ -218,6 +241,7 @@ class Analyzer:
         return return_value
 
     def get_a_sec_data_only(self, game_data, sec_key):
+        # print sec_key
         return filter(lambda x: x[1] == sec_key, game_data)
 
     def my_calculation(self, team_data, team_players, ind, hasball=False, ms=None, sec=None):
@@ -302,29 +326,6 @@ class Analyzer:
 
         if my_way:
             avg_dist1, avg_dist1_w = self.my_calculation(team_data1, team_players1, 0, hasball, ms=ms, sec=sec)
-            change = False
-            if sec == 13216:
-                change = True
-                ms.closest = avg_dist1/avg_dist1_w
-                ms.closest_sec = sec_data
-                ms.closest_scores = (avg_dist1, avg_dist1_w)
-            if sec == 13522:
-                change = True
-                ms.farthest = avg_dist1/avg_dist1_w
-                ms.farthest_sec = sec_data
-                ms.farthest_scores = (avg_dist1, avg_dist1_w)
-            if ms.farthest_sec and ms.closest_sec and change:
-                dm = np.array(Commons.dict_to_matrix(ms.secs_secs[ms.farthest_sec[0][1]]['dist_matrix'], Commons.bjk_kon, False))
-                p2p = np.array(Commons.dict_to_matrix(ms.secs_secs[ms.farthest_sec[0][1]]['p2p'], Commons.bjk_kon, False))
-                diff = np.subtract(dm, p2p)
-                pp = PitchPlotter(ms.closest_sec, ms.farthest_sec,
-                                  ms.closest_scores, ms.farthest_scores,
-                                  diff)
-                pp.display_scatter(self.weight_matrices['team1_total_off'],
-                                   self.weight_matrices['team1_closeness'],
-                                   self.weight_matrices['team1_passes'],
-                                   Commons.bjk_kon)
-
             avg_dist2, avg_dist2_w = self.my_calculation(team_data2, team_players2, 1, not hasball, ms=ms, sec=sec)
             return avg_dist1, avg_dist1_w, avg_dist2, avg_dist2_w
         else:
@@ -377,6 +378,12 @@ if __name__ == "__main__":
         print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
         print '%d of %s games' % (cnt + 1, len(games.keys()))
         try:
+
+            print '#' * 49
+            print '#' * 49
+            pprint.pprint(games[game])
+            print '#' * 49
+            print '#' * 49
             analyzer = Analyzer(games[game], game_events_by_type)
             ms = MatchStatistics(analyzer)
 
@@ -388,15 +395,13 @@ if __name__ == "__main__":
                 analyzer.calculate_closeness()
                 analyzer.calculate_passes()
                 analyzer.calculate_marking()
-                analyzer.save_weights()
+                # analyzer.save_weights()
             else:
-                analyzer.calculate_closeness()
+                # analyzer.calculate_closeness()
                 analyzer.calculate_passes()
 
             # pv = PitchValue(analyzer)
             # pv.plot_pitch_with_values()
-
-            break
 
             # importance_list = []
             # for i in range(0, 2):
@@ -407,27 +412,98 @@ if __name__ == "__main__":
             #
             #     importance = cls + mrk + pss
             #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
-            if not cnt:
-                team_names = Commons.bjk_kon
+            from data_loaders.sqls import Sqls
+            from data_loaders.mine_sql_connection import MySqlConnection
+
+            conn = MySqlConnection()
+            conn.execute_query(Sqls.GET_FIRST_ELEVEN % game)
+            first_eleven = conn.get_cursor().fetchall()
+            analyzer.team_names = [x[1] for x in first_eleven]
+            analyzer.nums = [x[0] for x in first_eleven]
+            analyzer.jersey = {x[1]: x[0] for x in first_eleven}
+
+            # if not cnt:
+            #     team_names = Commons.bjk_kon
+            # else:
+            #     team_names = Commons.bjk_bsk
+
+            if games[game]['home']['id'] == 3:
+                index = 0
             else:
-                team_names = Commons.bjk_kon
-            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.p2p_dicts[0])
-            analyzer.matrix_plotter.set_keys(team_names)
-            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.p2p_dicts[0])
-            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.p2p_dicts[0])
-            # analyzer.matrix_plotter.plot()
+                index = 1
+            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.p2p_dicts[index])
+            analyzer.matrix_plotter.set_keys(analyzer.team_names)
+            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.p2p_dicts[index])
+            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.p2p_dicts[index])
+            print '#' * 49
+            print '#' * 49
+            pprint.pprint(games[game]['home']['id'])
+            pprint.pprint(Commons.teams[games[game]['home']['id']])
+            print '#' * 49
+            print '#' * 49
+            analyzer.matrix_plotter.game_name = Commons.teams[games[game]['home']['id']] + "_" + \
+                                                Commons.teams[games[game]['away']['id']]
+
+            # analyzer.matrix_plotter.plot_pass_network(analyzer)
+            # analyzer.matrix_plotter.plot(id=cnt)
             # scatter = PitchScatter(analyzer.game_data_collector.db_data)
             # analyzer.matrix_plotter.set_scatter(scatter)
             # analyzer.matrix_plotter.plot_scatter(importance_list)
-
+            # continue
             analyzer.create_2d_arrays_of_cohesions()
             mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
             ms.print_ms()
             ms.set_sec_keys_of_ball_data()
             # ms.dist_plotter()
             # ms.scenario_plotter(just_home, midway)
-            ms.trace_game_events()
-            teams_events = ms.split_game_events_to_teams()
+            # ms.trace_game_events()
+            # teams_events = ms.split_game_events_to_teams()
+
+            conn.execute_query(Sqls.GET_SPRINT_DATA % game)
+            sprint_data = conn.get_cursor().fetchall()
+
+            uhva = UHVA(game, analyzer.teams[0].id, analyzer.teams[1].id)
+
+            for sprint in sprint_data:
+                time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + sprint[S_SEC]
+                if sprint[S_SEC] == 59:
+                    next_time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + 1
+                    next_min = sprint[S_MIN] + 1
+                    next_sec = 0
+                else:
+                    next_time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + sprint[S_SEC] + 1
+                    next_min = sprint[S_MIN]
+                    next_sec = sprint[S_SEC] + 1
+
+                team_index = 1
+                ts_index = 3
+                if analyzer.teams[0].id == sprint[S_TEAM_ID]:
+                    team_index = 0
+                    ts_index = 1
+                if ms.secs_secs.get(time) and ms.secs_secs.get(next_time):
+                    # get weighted team spread of the attacking team at corresponding second
+                    spread = ms.secs_secs[time]['dists'][ts_index]
+
+                    # get pos data of teams at corresponding second
+                    sec_data1 = analyzer.get_a_sec_data_only(analyzer.game_data, time)
+                    # get pos data for defending team at next of the corresponding second
+                    sec_data2 = analyzer.get_a_sec_data_only(analyzer.game_data, next_time)
+
+
+                    # get off_team_data
+                    off_data = filter(lambda x: x[0] == sprint[S_TEAM_ID], sec_data1)
+
+                    # get def_team_data_for_two_seconds
+                    def_players = [x[P_NAME] for x in filter(lambda x: x[0] != sprint[S_TEAM_ID], sec_data1)]
+                    def_data = [
+                        [filter(lambda x: x[P_NAME] == z, sec_data1+sec_data2)] for z in def_players]
+
+                    # get ref_p
+                    sprinting_player = filter(lambda x: x[P_JERSEY] == sprint[S_JERSEY]
+                                                        and x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data2)[0]
+                    ref_p = sprinting_player[P_X, P_Y]
+
+                    uhva.calculate_UHVA(sec=time, off_data=off_data, def_data=def_data, ref_p=ref_p)
 
             Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 

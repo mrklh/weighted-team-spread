@@ -4,6 +4,7 @@ from commons import Commons
 import matplotlib.pyplot as plt
 import traceback
 
+
 class ClosenessAnalyzer:
     def __init__(self, analyzer):
         self.analyzer = analyzer
@@ -13,6 +14,11 @@ class ClosenessAnalyzer:
 
         self.create_p2p_dicts()
         self.generate_tim_dict()
+        # print '#' * 49
+        # print '#' * 49
+        # pprint.pprint(self.tim_dict[12119])
+        # print '#' * 49
+        # print '#' * 49
         self.generate_closeness_matrices()
 
     def generate_tim_dict(self):
@@ -69,8 +75,8 @@ class ClosenessAnalyzer:
         :return:
         '''
         for count, tim in enumerate(self.tim_dict):
-            if len(self.tim_dict[tim]['players'].keys()) < 22:
-                continue
+            # if len(self.tim_dict[tim]['players'].keys()) < 22:
+            #     continue
             for c, team in enumerate(self.p2p_dicts):
                 range_type = True if int(self.tim_dict[tim]['hasball_team_id']) == self.analyzer.teams[c].id else False
                 for player in team:

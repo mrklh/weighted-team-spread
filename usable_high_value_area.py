@@ -1,9 +1,9 @@
-# from pitch_value import PitchValue
-# from pass_probability import PassProbability
+from pitch_value import PitchValue
+from pass_probability import PassProbability
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import numpy as np
+import random
 import math
 import pprint
 import time
@@ -16,7 +16,6 @@ X = 5
 Y = 6
 FROB_RATIO = 153.013360979
 
-
 class UHVA:
     X_DOWN = 0
     X_UP = 110
@@ -25,9 +24,9 @@ class UHVA:
     X_RANGE = np.linspace(X_DOWN, X_UP, 50)
     Y_RANGE = np.linspace(Y_DOWN, Y_UP, 50)
 
-    def __init__(self):
-        self.pv = PitchValue()
-        self.pp = PassProbability()
+    def __init__(self, game_id, home_id, away_id):
+        self.pv = PitchValue(home_id, away_id, game_id)
+        self.pp = PassProbability(home_id, away_id, game_id)
         self.UHVA = None
         self.frobenious = 0
         self.mean_x = 0
@@ -35,6 +34,9 @@ class UHVA:
         self.r = 0
         self.pp_result = 0
         self.pv_result = 0
+        self.game_id = game_id
+        self.home_id = home_id
+        self.away_id = away_id
 
     @staticmethod
     def l2(p1, p2):
@@ -44,11 +46,12 @@ class UHVA:
     def l22(p1, p2):
         return ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
 
-    def calculate_UHVA(self, sec=0):
-        self.pv_result = self.pv.show_all(sec).transpose()
+    def calculate_UHVA(self, sec=0, off_data=[], def_data=[], ref_p=[]):
+        self.pv_result = self.pv.show_all(off_data, def_data, ref_p).transpose()
+        print "PV, sec: %d" % sec
         self.pp_result = self.pp.show_all(sec).transpose()
-        self.UHVA = np.add(self.pv_result, self.pp_result*1.5)
-        self.normalize()
+        print "PP, sec: %d" % sec
+        self.UHVA = np.add(self.pv_result, self.pp_result*0.8)
         self.apply_mean()
         self.normalize()
         # self.UHVA = self.UHVA.transpose()
@@ -66,6 +69,9 @@ class UHVA:
         for player1 in self.pv.off_players_data_at_sec:
             for player2 in self.pv.off_players_data_at_sec:
                 self.frobenious += self.l2(player1[0], player2[0])
+
+    def set_frob(self, frob_val):
+        self.frobenious = frob_val
 
     def mean(self):
         x = 0
@@ -93,96 +99,75 @@ class UHVA:
         if pre_result is not None:
             self.UHVA = pre_result
 
-        # im = axs[0].imshow(self.pp_result, extent=[0, 110, 0, 68])
-        # plt.colorbar(im)
+        plt.axis('off')
 
-        # im = axs[1].imshow(self.pv_result, extent=[0, 110, 0, 68])
-        # plt.colorbar(im)
-        #
         im = axs.imshow(self.UHVA, extent=[0, 110, 0, 68])
         plt.colorbar(im)
+        img = plt.imread("resources/pitch.png")
+        axs.imshow(img, extent=[0, 110, 0, 68], alpha=0.6)
+        # plt.colorbar(im)
 
         for player in self.pv.def_players_data_at_sec:
             x, y = self.pv.get_xy(player[0])
-            axs.scatter(x, y, c='red', s=75)
-            # axs[1].scatter(x, y, c='red', s=30)
-            # axs[2].scatter(x, y, c='red', s=30)
+            axs.scatter(x, y, c='orange', s=100)
+        for player in self.pv.def_players_data_at_sec:
+            x, y = self.pv.get_xy(player[1])
+            axs.scatter(x, y, c='red', s=100)
+
+
+        self.pv.get_defender_positions(c+2)
+        self.pv.get_offense_positions(c+2)
+
         for player in self.pv.off_players_data_at_sec:
             x, y = self.pv.get_xy(player[0])
-            axs.scatter(x, y, c='green', s=75)
-            # axs[1].scatter(x, y, c='green', s=30)
-            # axs[2].scatter(x, y, c='green', s=30)
+            axs.scatter(x, y, c='yellow', s=100)
+        for player in self.pv.off_players_data_at_sec:
+            x, y = self.pv.get_xy(player[1])
+            axs.scatter(x, y, c='green', s=100)
 
-        # axs[0].scatter(self.mean_x, self.mean_y, c='blue', s=150)
-        # axs[1].scatter(self.mean_x, self.mean_y, c='blue', s=150)
-        # axs[2].scatter(self.mean_x, self.mean_y, c='blue', s=150)
+        # axs.scatter(self.pv.get_llajic_pos(c-2)[0], self.pv.get_llajic_pos(c-2)[1], c='cyan', s=130)
+        # axs.scatter(self.pv.get_llajic_pos(c)[0], self.pv.get_llajic_pos(c)[1], c='blue', s=130)
+        # axs.scatter(self.pv.get_llajic_pos(c+2)[0], self.pv.get_llajic_pos(c+2)[1], c='black', s=130)
+
 
         axs.scatter(self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][0],
                     self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][1],
-                    c='white', s=75)
-        # axs[1].scatter(self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][0],
-        #             self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][1],
-        #             c='white', s=30)
-        # axs[2].scatter(self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][0],
-        #             self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][1],
-        #             c='white', s=30)
+                    c='white', s=100)
 
-        # plt.grid()
-        # plt.show()
-        plt.savefig("plots/final_sprint.pdf", bbox_inches='tight')
-
+        plt.show()
+        # # plt.savefig("plots/uhva.eps", bbox_inches='tight')
+        #
 
 # uhva = UHVA()
 # uhvas = []
+# X_DOWN = 0
+# X_UP = 110
+# Y_DOWN = 68
+# Y_UP = 0
+# X_RANGE = np.linspace(X_DOWN, X_UP, 50)
+# Y_RANGE = np.linspace(Y_DOWN, Y_UP, 50)
+#
 # for i in range(9):
-#     uhva.frob(i)
-#     uhva.mean()
-#     uhva.calculate_UHVA(i)
-#     uhvas.append(uhva.UHVA)
-#     uhva.show(c=i)
-
-# for c, each in enumerate(uhvas):
-#     time.sleep(1)
-
-
-a = [[25, 36],
-     [48, 65],
-     [51, 50],
-     [50, 35],
-     [46, 10],
-     [55, 30],
-     [57, 8],
-     [68, 39],
-     [65, 33],
-     [65, 15],
-     [10, 32]]
-
-b = [[48, 32],
-     [55, 36],
-     [59, 20],
-     [65, 42],
-     [68, 32],
-     [72, 65],
-     [75, 40],
-     [84, 42],
-     [79, 33],
-     [87, 5],
-     [20, 34]]
-
-
-fig, ax = plt.subplots()
-img = plt.imread("C:/Users/kulah/Desktop/pitchbw.png")
-ax.imshow(img, extent=[0, 110, 0, 68])
-ax.set_xticks(np.arange(-2.5, 110, 10))
-ax.set_yticks(np.arange(-2.5, 67.5, 5))
-fig.tight_layout()
-plt.scatter([x[0] for x in b], [y[1] for y in b], color='b', s=100)
-rect = patches.Rectangle((46, 66), 42, -63, linewidth=2, edgecolor='r', facecolor='none')
-ax.add_patch(rect)
-
-plt.text(46.5, 10, "60 meters", {'color': 'r'})
-plt.text(56, 63, "39 meters", {'color': 'r'})
-# ax.annotate("60 meters", (36, 20))
-# ax.annotate("40 meters", (50, 63))
-# plt.show()
-plt.savefig("bjkkon_far.pdf", bbox_inches="tight")
+#     try:
+#         uhva.frob(i)
+#         uhva.mean()
+#         uhva.calculate_UHVA(i)
+#
+#         # llajic_dist = 150
+#         # for j, x in enumerate(X_RANGE):
+#         #     for k, y in enumerate(Y_RANGE):
+#         #         if llajic_dist > UHVA.l22([x, y], uhva.pv.get_llajic_pos(i)):
+#         #             llajic_dist = UHVA.l22([x, y], uhva.pv.get_llajic_pos(i))
+#         #             gen_j = j
+#         #             gen_k = k
+#         #
+#         # print "Llajic score: %.2f sec: %d" % (uhva.UHVA[gen_j][gen_k], i)
+#         uhvas.append(uhva.UHVA)
+#         uhva.show(c=i)
+#     except:
+#         import traceback
+#         traceback.print_exc()
+#     # break
+#
+# # for c, each in enumerate(uhvas):
+# #     time.sleep(1)

@@ -11,6 +11,8 @@ class Commons:
         13: 'Alanyaspor',
         21: 'Antalyaspor',
         42: 'Bursaspor',
+        46: 'Caykur Rizespor',
+        67: 'Gazisehir Gaziantep',
         71: 'Genclerbirligi',
         74: 'Goztepe',
         82: 'Medipol Basaksehir',
@@ -97,7 +99,13 @@ class Commons:
 
     @staticmethod
     def is_in_range_def(point1, point2):
-        if ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5 < 1:
+        if ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5 < 4:
+            return True
+        return False
+
+    @staticmethod
+    def is_in_range_mark(point1, point2):
+        if ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5 < 2:
             return True
         return False
 
@@ -107,6 +115,8 @@ class Commons:
 
         def normalize():
             def minmax(x):
+                if mx-mn == 0:
+                    return 0
                 return (x - mn) / float(mx - mn)
 
             mx = np.max(team_matrix)
@@ -122,7 +132,22 @@ class Commons:
                 if player1 == player2:
                     team_matrix[cnt1, cnt2] = 0
                 else:
-                    team_matrix[cnt1][cnt2] = data_as_dict[player1][player2]
+                    try:
+                        team_matrix[cnt1][cnt2] = data_as_dict[player1][player2]
+                    except:
+                        print '#' * 49
+                        print '#' * 49
+                        pprint.pprint(keys)
+                        print '#' * 49
+                        pprint.pprint(player1)
+                        print '#' * 49
+                        pprint.pprint(player2)
+                        print '#' * 49
+                        pprint.pprint(data_as_dict)
+                        print '#' * 49
+                        pprint.pprint(team_matrix)
+                        print '#' * 49
+                        print '#' * 49
         if is_normalize:
             team_matrix = normalize()
         return team_matrix

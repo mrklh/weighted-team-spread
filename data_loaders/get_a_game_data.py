@@ -6,6 +6,19 @@ from db_data_collector import DbDataCollector
 from sqls import Sqls
 from pickle_loader import PickleLoader
 
+TEAM_ID = 0
+TIME = 1
+HALF = 2
+MINUTE = 3
+SECOND = 4
+POS_X = 5
+POS_Y = 6
+JERSEY = 7
+HASBALL_TID = 8
+STARTING = 9
+SPEED = 10
+NAME = 11
+
 
 class GameData(DbDataCollector):
     def __init__(self, get_type='Single', game=None):
@@ -47,15 +60,25 @@ class GameData(DbDataCollector):
         self.conn.execute_query(query, (self.db_data[0].name, self.db_data[1].name))
 
     def process_data(self):
-        for cnt, data in enumerate(self.conn.get_cursor()):
+        all_data = self.conn.get_cursor().fetchall()
+
+        for cnt, data in enumerate(all_data):
             # Subs processes. Changing jersey number and name
             data = list(data)
-            if data[-2] == 0:
-                data[7] = self.subs[data[-1]][0]
-                data[-1] = self.subs[data[-1]][1]
+            try:
+                if data[STARTING] == 0:
+                    data[JERSEY] = self.subs[data[-1]][0]
+                    data[NAME] = self.subs[data[-1]][1]
+            except:
+                print "Process data-1", data
+            try:
+                if data[HASBALL_TID] is None:
+                    data[HASBALL_TID] = 0
+            except:
+                print "Process data-2", data
 
             self.game_data.append(data)
-            player_name = data[-1] or "Unknown Player"
+            player_name = data[NAME] or "Unknown Player"
             team = self.get_team_by_id(data[0])
 
             row_data = [data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[10]]
