@@ -49,7 +49,7 @@ class UHVA:
     def calculate_UHVA(self, sec=0, off_data=[], def_data=[], ref_p=[]):
         self.pv_result = self.pv.show_all(off_data, def_data, ref_p).transpose()
         print "PV, sec: %d" % sec
-        self.pp_result = self.pp.show_all(sec).transpose()
+        self.pp_result = self.pp.show_all(off_data, def_data, ref_p).transpose()
         print "PP, sec: %d" % sec
         self.UHVA = np.add(self.pv_result, self.pp_result*0.8)
         self.apply_mean()
@@ -91,9 +91,9 @@ class UHVA:
                 if diff > self.r:
                     self.UHVA[i][j] *= self.r/diff
 
-    def show(self, pre_result=None, c=0):
-        self.pv.get_defender_positions(c)
-        self.pv.get_offense_positions(c)
+    def show(self, pre_result=None, sec=0):
+        # self.pv.get_defender_positions(c)
+        # self.pv.get_offense_positions(c)
 
         fig, axs = plt.subplots(1, 1, figsize=(14, 6))
         if pre_result is not None:
@@ -115,8 +115,8 @@ class UHVA:
             axs.scatter(x, y, c='red', s=100)
 
 
-        self.pv.get_defender_positions(c+2)
-        self.pv.get_offense_positions(c+2)
+        # self.pv.get_defender_positions(c+2)
+        # self.pv.get_offense_positions(c+2)
 
         for player in self.pv.off_players_data_at_sec:
             x, y = self.pv.get_xy(player[0])
@@ -129,9 +129,8 @@ class UHVA:
         # axs.scatter(self.pv.get_llajic_pos(c)[0], self.pv.get_llajic_pos(c)[1], c='blue', s=130)
         # axs.scatter(self.pv.get_llajic_pos(c+2)[0], self.pv.get_llajic_pos(c+2)[1], c='black', s=130)
 
-
-        axs.scatter(self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][0],
-                    self.pv.ball_pos_dict[self.pv.data[c][0][SEC]][1],
+        axs.scatter(self.pv.ball_pos_dict[sec][0],
+                    self.pv.ball_pos_dict[sec][1],
                     c='white', s=100)
 
         plt.show()

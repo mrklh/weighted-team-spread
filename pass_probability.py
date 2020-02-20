@@ -53,8 +53,7 @@ class PassProbability:
         self.game_id = game_id
 
         self.get_ball_pos()
-        self.ball_pos_dict = {x[0]: (x[4], x[5]) for x in
-                              filter(lambda x: x[0] in [x[0][1] for x in self.data], self.ball_pos_data)}
+        self.ball_pos_dict = {x[0]: (x[4], x[5]) for x in self.ball_pos_data}
 
     @staticmethod
     def l2(p1, p2, printt=False):
@@ -79,7 +78,7 @@ class PassProbability:
         for each in conn.get_cursor():
             self.ball_pos_data.append(each)
 
-    def calculate_influence(self, sec1, sec2, ref_p=None, prnt=False, factor=1, printt=False):
+    def calculate_influence(self, sec1, sec2, ref_p=None, prnt=False, factor=1.0, printt=False):
         if not ref_p:
             ref_p = self.get_xy(sec1)
 
@@ -172,14 +171,14 @@ class PassProbability:
             print_muit = True
         return np.array([sec1[X] + (sec1[SPEED][0] / 2), sec1[Y] + ((sec1[SPEED][1]) / 2)])
 
-    def get_defender_positions(self, sec):
-        def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, self.data[0])]
-        # def_players = ['Ferhat']
-        self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in def_players]
-
-    def get_offense_positions(self, sec):
-        off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, self.data[0])]
-        self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
+    # def get_defender_positions(self, sec):
+    #     def_players = [x[NAME] for x in filter(lambda x: x[0] == 101, self.data[0])]
+    #     # def_players = ['Ferhat']
+    #     self.def_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in def_players]
+    #
+    # def get_offense_positions(self, sec):
+    #     off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, self.data[0])]
+    #     self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
 
     def initialize(self):
         for i, x in enumerate(self.X_RANGE):
@@ -187,7 +186,7 @@ class PassProbability:
                 ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
                 self.results[i][j] = (x - ball_x) / 4000
 
-    def add_defensive_players(self):
+    def add_defensive_players(self, ref_p):
         for c, player in enumerate(self.def_players_data_at_sec):
             sec1 = player[0]
             sec2 = player[1]
@@ -212,7 +211,7 @@ class PassProbability:
             printt = True
             for i, x in enumerate(self.X_RANGE):
                 for j, y in enumerate(self.Y_RANGE):
-                    self.results[i][j] -= self.calculate_influence(sec1, sec2, ref_p=[x, y], factor=0.3, printt=printt)
+                    self.results[i][j] -= self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3, printt=printt)
                     printt = False
             # if c>0:
             #     break
@@ -256,11 +255,13 @@ class PassProbability:
                     self.ball_pos_dict[self.data[sec][0][SEC]][1],
                     c='white', s=100)
 
-    def show_all(self, showed_sec):
-        self.get_defender_positions(showed_sec)
-        self.get_offense_positions(showed_sec)
+    def show_all(self, off_data, def_data, ref_p):
+        self.def_players_data_at_sec = def_data
+        self.off_players_data_at_sec = off_data
+        # self.get_defender_positions(showed_sec)
+        # self.get_offense_positions(showed_sec)
         # self.initialize()
-        self.add_defensive_players()
+        self.add_defensive_players(ref_p)
         self.normalize()
         return self.results
         # self.show()

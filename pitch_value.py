@@ -29,14 +29,14 @@ class PitchValue:
     X_UP = 110
     Y_DOWN = 68
     Y_UP = 0
-    X_RANGE = np.linspace(X_DOWN, X_UP, 100)
-    Y_RANGE = np.linspace(Y_DOWN, Y_UP, 100)
+    X_RANGE = np.linspace(X_DOWN, X_UP, 50)
+    Y_RANGE = np.linspace(Y_DOWN, Y_UP, 50)
 
     def __init__(self, home_id, away_id, game_id):
         self.ball_pos_data = []
         self.def_players_data_at_sec = []
         self.off_players_data_at_sec = []
-        self.results = np.zeros((100, 100))
+        self.results = np.zeros((50, 50))
 
         self.home_id = home_id
         self.away_id = away_id
@@ -51,8 +51,7 @@ class PitchValue:
         #         print each[0][1]
         #     except:
         #         print "Problem"
-        self.ball_pos_dict = {x[0]: (x[4], x[5]) for x in
-                              filter(lambda x: x[0] in [x[0][1] for x in self.data], self.ball_pos_data)}
+        self.ball_pos_dict = {x[0]: (x[4], x[5]) for x in self.ball_pos_data}
 
     @staticmethod
     def l2(p1, p2):
@@ -110,7 +109,7 @@ class PitchValue:
         return np.array([[self.cos(p1, p2), -self.sin(p1, p2)], [self.sin(p1, p2), self.cos(p1, p2)]])
 
     def calculate_sit(self, sec):
-        rit_score = self.rit((sec[X], sec[Y]), self.get_xy(self.ball_pos_dict[sec[SEC]]))
+        rit_score = self.rit((sec[X], sec[Y]), self.ball_pos_dict[sec[SEC]])
         scaling = rit_score * (sec[SPEED] ** 2 / 169.0)
 
         # print "/" * 50
@@ -212,7 +211,7 @@ class PitchValue:
                 self.results[i][j] = (self.results[i][j] - minn) / (maxx - minn)
 
     def r_normalize(self):
-        result = np.zeros((100, 100))
+        result = np.zeros((50, 50))
 
         maxx = np.max(self.results)
         minn = np.min(self.results)

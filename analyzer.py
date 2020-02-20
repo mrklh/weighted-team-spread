@@ -2,6 +2,7 @@
 
 import pprint
 import traceback
+from asynchat import simple_producer
 
 import numpy as np
 
@@ -490,20 +491,25 @@ if __name__ == "__main__":
                     sec_data2 = analyzer.get_a_sec_data_only(analyzer.game_data, next_time)
 
 
-                    # get off_team_data
-                    off_data = filter(lambda x: x[0] == sprint[S_TEAM_ID], sec_data1)
+                    # get off_team_data for two seconds
+                    off_players = [x[P_NAME] for x in filter(lambda x: x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data1)]
+                    continuous_data = [sec_data1] + [sec_data2]
+                    off_data = [[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] == sprint[S_TEAM_ID], y)[0]
+                                 for y in continuous_data] for z in off_players]
 
-                    # get def_team_data_for_two_seconds
-                    def_players = [x[P_NAME] for x in filter(lambda x: x[0] != sprint[S_TEAM_ID], sec_data1)]
-                    def_data = [
-                        [filter(lambda x: x[P_NAME] == z, sec_data1+sec_data2)] for z in def_players]
+                    # get def_team_data for two seconds
+                    def_players = [x[P_NAME] for x in filter(lambda x: x[P_TEAM_ID] != sprint[S_TEAM_ID], sec_data1)]
+                    continuous_data = [sec_data1] + [sec_data2]
+                    def_data = [[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] != sprint[S_TEAM_ID], y)[0]
+                                 for y in continuous_data] for z in def_players]
 
                     # get ref_p
                     sprinting_player = filter(lambda x: x[P_JERSEY] == sprint[S_JERSEY]
                                                         and x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data2)[0]
-                    ref_p = sprinting_player[P_X, P_Y]
+                    ref_p = [sprinting_player[P_X],  sprinting_player[P_Y]]
 
                     uhva.calculate_UHVA(sec=time, off_data=off_data, def_data=def_data, ref_p=ref_p)
+                    uhva.show(sec=time)
 
             Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 
