@@ -29,14 +29,12 @@ class PitchValue:
     X_UP = 110
     Y_DOWN = 68
     Y_UP = 0
-    X_RANGE = np.linspace(X_DOWN, X_UP, 50)
-    Y_RANGE = np.linspace(Y_DOWN, Y_UP, 50)
 
     def __init__(self, home_id, away_id, game_id):
         self.ball_pos_data = []
         self.def_players_data_at_sec = []
         self.off_players_data_at_sec = []
-        self.results = np.zeros((50, 50))
+        self.result = 0
 
         self.home_id = home_id
         self.away_id = away_id
@@ -110,7 +108,10 @@ class PitchValue:
 
     def calculate_sit(self, sec):
         rit_score = self.rit((sec[X], sec[Y]), self.ball_pos_dict[sec[SEC]])
-        scaling = rit_score * (sec[SPEED] ** 2 / 169.0)
+        try:
+            scaling = rit_score * (sec[SPEED] ** 2 / 169.0)
+        except:
+            print "LAAAAAAAN"
 
         # print "/" * 50
         # print "/" * 50
@@ -144,83 +145,75 @@ class PitchValue:
     # def get_offense_positions(self, sec, off_team_id):
     #     off_players = [x[NAME] for x in filter(lambda x: x[0] == off_team_id, self.data[0])]
     #     self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
+    #
+    # def initialize(self):
+    #     for i, x in enumerate(self.X_RANGE):
+    #         for j, y in enumerate(self.Y_RANGE):
+    #             # ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
+    #             # self.results[i][j] = (x - ball_x) / 3000
+    #             self.results[i][j] = 0
 
-    def initialize(self):
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                # ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
-                # self.results[i][j] = (x - ball_x) / 3000
-                self.results[i][j] = 0
-
-    def add_location(self):
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
-                self.results[i][j] += (x - ball_x) / 3000
+    def add_location(self, ref_p):
+        ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
+        self.result += (ref_p[0] - ball_x) / 3000
 
     def add_defensive_players(self, ref_p):
         for player in self.def_players_data_at_sec:
             sec1 = player[0]
             sec2 = player[1]
-            pprint.pprint('%s POSITION %.3f-%.3f' % (sec1[NAME], self.get_xy(sec1)[0], self.get_xy(sec1)[1]))
+            # pprint.pprint('%s POSITION %.3f-%.3f' % (sec1[NAME], self.get_xy(sec1)[0], self.get_xy(sec1)[1]))
 
-            for i, x in enumerate(self.X_RANGE):
-                for j, y in enumerate(self.Y_RANGE):
-                    self.results[i][j] += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3)
+            self.result += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3)
 
     def add_goal(self, ref_p):
         sec1 = [0] * 11
         sec1[Y] = 34
         sec1[X] = 110
         sec1[SPEED] = 0.1
-        sec1[SEC] = self.data[4][0][SEC]
+        sec1[SEC] = self.def_players_data_at_sec[0][0][SEC]
         sec2 = [0] * 11
         sec2[Y] = 34
         sec2[X] = 109.9
         sec2[SPEED] = 0
-        sec2[SEC] = self.data[5][0][SEC]
-        print "Add goal Position %.3f-%.3f" % (sec1[X], sec1[Y])
+        sec2[SEC] = self.def_players_data_at_sec[0][1][SEC]
+        # print "Add goal Position %.3f-%.3f" % (sec1[X], sec1[Y])
 
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                self.results[i][j] += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.2)
+        self.result += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.2)
 
     def add_ball(self, sec, ref_p):
         sec1 = [0] * 11
-        sec1[X] = self.ball_pos_dict[self.data[sec][0][SEC]][0]
-        sec1[Y] = self.ball_pos_dict[self.data[sec][0][SEC]][1]
+        sec1[X] = self.ball_pos_dict[self.def_players_data_at_sec[0][sec][SEC]][0]
+        sec1[Y] = self.ball_pos_dict[self.def_players_data_at_sec[0][sec][SEC]][1]
         sec1[SPEED] = 0.1
-        sec1[SEC] = self.data[sec][0][SEC]
+        sec1[SEC] = self.def_players_data_at_sec[0][0][SEC]
         sec2 = [0] * 11
-        sec2[X] = self.ball_pos_dict[self.data[sec+1][0][SEC]][0]
-        sec2[Y] = self.ball_pos_dict[self.data[sec+1][0][SEC]][1]
+        sec2[X] = self.ball_pos_dict[self.def_players_data_at_sec[0][sec+1][SEC]][0]
+        sec2[Y] = self.ball_pos_dict[self.def_players_data_at_sec[0][sec+1][SEC]][1]
         sec2[SPEED] = 0
-        sec2[SEC] = self.data[sec+1][0][SEC]
-        print "Add ball Position %.3f-%.3f" % (sec1[X], sec1[Y])
+        sec2[SEC] = self.def_players_data_at_sec[0][1][SEC]
+        # print "Add ball Position %.3f-%.3f" % (sec1[X], sec1[Y])
 
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                self.results[i][j] += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3)
-
-    def normalize(self):
-        maxx = np.max(self.results)
-        minn = np.min(self.results)
-
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                self.results[i][j] = (self.results[i][j] - minn) / (maxx - minn)
-
-    def r_normalize(self):
-        result = np.zeros((50, 50))
-
-        maxx = np.max(self.results)
-        minn = np.min(self.results)
-
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                result[i][j] = (self.results[i][j] - minn) / (maxx - minn)
-
-        return result
+        self.result += self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3)
+    #
+    # def normalize(self):
+    #     maxx = np.max(self.results)
+    #     minn = np.min(self.results)
+    #
+    #     for i, x in enumerate(self.X_RANGE):
+    #         for j, y in enumerate(self.Y_RANGE):
+    #             self.results[i][j] = (self.results[i][j] - minn) / (maxx - minn)
+    #
+    # def r_normalize(self):
+    #     result = np.zeros((50, 50))
+    #
+    #     maxx = np.max(self.results)
+    #     minn = np.min(self.results)
+    #
+    #     for i, x in enumerate(self.X_RANGE):
+    #         for j, y in enumerate(self.Y_RANGE):
+    #             result[i][j] = (self.results[i][j] - minn) / (maxx - minn)
+    #
+    #     return result
 
     def show(self, prep_results=None, sec=None, name=''):
         if prep_results is not None:
@@ -252,13 +245,13 @@ class PitchValue:
         self.def_players_data_at_sec = def_data
         self.off_players_data_at_sec = off_data
 
-        self.initialize()
+        # self.initialize()
         self.add_defensive_players(ref_p)
         self.add_goal(ref_p)
         self.add_ball(0, ref_p)
-        self.add_location()
-        self.normalize()
-        return self.results
+        self.add_location(ref_p)
+        # self.normalize()
+        return self.result
         # self.show()
 
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import pickle
 import pprint
 import traceback
 from asynchat import simple_producer
@@ -243,7 +244,8 @@ class Analyzer:
 
     def get_a_sec_data_only(self, game_data, sec_key):
         # print sec_key
-        return filter(lambda x: x[1] == sec_key, game_data)
+        sec_data = filter(lambda x: x[1] == sec_key, game_data)
+        return [list(x) for x in sec_data]
 
     def my_calculation(self, team_data, team_players, ind, hasball=False, ms=None, sec=None):
         '''
@@ -380,6 +382,8 @@ if __name__ == "__main__":
         print '%d of %s games' % (cnt + 1, len(games.keys()))
         try:
 
+            sprint_dict = {}
+
             print '#' * 49
             print '#' * 49
             pprint.pprint(games[game])
@@ -465,8 +469,16 @@ if __name__ == "__main__":
 
             uhva = UHVA(game, analyzer.teams[0].id, analyzer.teams[1].id)
 
-            for sprint in sprint_data:
-                time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + sprint[S_SEC]
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            print "LEN SPRINT", len(sprint_data)
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            for spc, sprint in enumerate(sprint_data):
+                if not spc % 10:
+                    print "%d sprint calculated." % spc
+                sprint_time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + sprint[S_SEC]
+
                 if sprint[S_SEC] == 59:
                     next_time = 10000*sprint[S_HALF] + 100*sprint[S_MIN] + 1
                     next_min = sprint[S_MIN] + 1
@@ -476,17 +488,20 @@ if __name__ == "__main__":
                     next_min = sprint[S_MIN]
                     next_sec = sprint[S_SEC] + 1
 
+                if not uhva.pv.ball_pos_dict.get(sprint_time) or not uhva.pv.ball_pos_dict.get(next_time):
+                    continue
+
                 team_index = 1
                 ts_index = 3
                 if analyzer.teams[0].id == sprint[S_TEAM_ID]:
                     team_index = 0
                     ts_index = 1
-                if ms.secs_secs.get(time) and ms.secs_secs.get(next_time):
+                if ms.secs_secs.get(sprint_time) and ms.secs_secs.get(next_time):
                     # get weighted team spread of the attacking team at corresponding second
-                    spread = ms.secs_secs[time]['dists'][ts_index]
+                    spread = ms.secs_secs[sprint_time]['dists'][ts_index]
 
                     # get pos data of teams at corresponding second
-                    sec_data1 = analyzer.get_a_sec_data_only(analyzer.game_data, time)
+                    sec_data1 = analyzer.get_a_sec_data_only(analyzer.game_data, sprint_time)
                     # get pos data for defending team at next of the corresponding second
                     sec_data2 = analyzer.get_a_sec_data_only(analyzer.game_data, next_time)
 
@@ -494,26 +509,37 @@ if __name__ == "__main__":
                     # get off_team_data for two seconds
                     off_players = [x[P_NAME] for x in filter(lambda x: x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data1)]
                     continuous_data = [sec_data1] + [sec_data2]
-                    off_data = [[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] == sprint[S_TEAM_ID], y)[0]
-                                 for y in continuous_data] for z in off_players]
+                    off_data = list([[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] == sprint[S_TEAM_ID], y)[0]
+                                 for y in continuous_data] for z in off_players])
 
                     # get def_team_data for two seconds
                     def_players = [x[P_NAME] for x in filter(lambda x: x[P_TEAM_ID] != sprint[S_TEAM_ID], sec_data1)]
-                    continuous_data = [sec_data1] + [sec_data2]
-                    def_data = [[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] != sprint[S_TEAM_ID], y)[0]
-                                 for y in continuous_data] for z in def_players]
+                    def_data = list([[filter(lambda x: x[P_NAME] == z and x[P_TEAM_ID] != sprint[S_TEAM_ID], y)[0]
+                                 for y in continuous_data] for z in def_players])
 
                     # get ref_p
-                    sprinting_player = filter(lambda x: x[P_JERSEY] == sprint[S_JERSEY]
-                                                        and x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data2)[0]
+                    try:
+                        sprinting_player = filter(lambda x: x[P_JERSEY] == sprint[S_JERSEY]
+                                                            and x[P_TEAM_ID] == sprint[S_TEAM_ID], sec_data2)[0]
+                    except:
+                        continue
                     ref_p = [sprinting_player[P_X],  sprinting_player[P_Y]]
 
-                    uhva.calculate_UHVA(sec=time, off_data=off_data, def_data=def_data, ref_p=ref_p)
-                    uhva.show(sec=time)
+                    uhva.set_frob(ms.secs_secs.get(sprint_time)['dists'][ts_index])
+                    uhva.mean()
+                    uhva_val = uhva.calculate_UHVA(sec=sprint_time, off_data=off_data, def_data=def_data, ref_p=ref_p)
+                    if not sprint_dict.get(str(game) + "_" + str(sprint[S_TEAM_ID]) + "_" + str(sprint[S_JERSEY])):
+                        sprint_dict[str(game) + "_" + str(sprint[S_TEAM_ID]) + "_" + str(sprint[S_JERSEY])] = []
+
+                    sprint_dict[str(game) + "_" + str(sprint[S_TEAM_ID]) + "_" + str(sprint[S_JERSEY])].append(uhva_val)
+                    # uhva.show(sec=time)
 
             Reporter(games[game], nh_x, nh_y, na_x, na_y, mh_w, ma_w)
 
             winner_home = 1
+            with open("pickles/%d_sprints.pkl" % game, "wb") as f:
+                pickle.dump(sprint_dict, f)
+
             if int(games[game]['score'].split('-')[0]) < int(games[game]['score'].split('-')[1]):
                 winner_home = 0
                 
@@ -528,7 +554,6 @@ if __name__ == "__main__":
             print e
             traceback.print_exc()
 
-    import pickle
     with open('pickles/teams_events_real_spread.pkl', 'wb+') as f:
         pickle.dump(teams_events, f)
 

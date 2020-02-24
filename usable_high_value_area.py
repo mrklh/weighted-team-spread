@@ -48,12 +48,13 @@ class UHVA:
 
     def calculate_UHVA(self, sec=0, off_data=[], def_data=[], ref_p=[]):
         self.pv_result = self.pv.show_all(off_data, def_data, ref_p).transpose()
-        print "PV, sec: %d" % sec
+        # print "PV, sec: %d" % sec
         self.pp_result = self.pp.show_all(off_data, def_data, ref_p).transpose()
-        print "PP, sec: %d" % sec
+        # print "PP, sec: %d" % sec
         self.UHVA = np.add(self.pv_result, self.pp_result*0.8)
-        self.apply_mean()
-        self.normalize()
+        self.apply_mean(ref_p)
+        return self.UHVA
+        # self.normalize()
         # self.UHVA = self.UHVA.transpose()
 
     def normalize(self):
@@ -62,7 +63,8 @@ class UHVA:
 
         for i, x in enumerate(self.X_RANGE):
             for j, y in enumerate(self.Y_RANGE):
-                self.UHVA[i][j] = (self.UHVA[i][j] - minn) / (maxx - minn)
+                new_val = (self.UHVA[i][j] - minn) / (maxx - minn)
+                self.UHVA[i][j] = new_val
 
     def frob(self, sec):
         self.pv.get_offense_positions(sec)
@@ -84,12 +86,10 @@ class UHVA:
         self.mean_y = y/11
         self.r = 7000/FROB_RATIO
 
-    def apply_mean(self):
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                diff = self.l22([self.mean_x, self.mean_y], [x, y])
-                if diff > self.r:
-                    self.UHVA[i][j] *= self.r/diff
+    def apply_mean(self, ref_p):
+        diff = self.l22([self.mean_x, self.mean_y], ref_p)
+        if diff > self.r:
+            self.UHVA *= self.r/diff
 
     def show(self, pre_result=None, sec=0):
         # self.pv.get_defender_positions(c)

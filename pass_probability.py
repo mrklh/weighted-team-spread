@@ -37,14 +37,12 @@ class PassProbability:
     X_UP = 110
     Y_DOWN = 68
     Y_UP = 0
-    X_RANGE = np.linspace(X_DOWN, X_UP, 50)
-    Y_RANGE = np.linspace(Y_DOWN, Y_UP, 50)
 
     def __init__(self, home_id, away_id, game_id):
         self.ball_pos_data = []
         self.def_players_data_at_sec = []
         self.off_players_data_at_sec = []
-        self.results = np.zeros((50, 50))
+        self.result = 0
         with open('pickles/pitch_value_data.pkl', 'rb+') as f:
             self.data = pickle.load(f)
 
@@ -128,8 +126,8 @@ class PassProbability:
         #     print "self.cos(p1, p2)", self.cos(p1, p2)
         #     print "self.sin(p1, p2)", self.sin(p1, p2)
         if not print_rotit:
-            print "calculate_rotit"
-            print np.array([[self.cos(p1, p2), -self.sin(p1, p2)], [self.sin(p1, p2), self.cos(p1, p2)]])
+            # print "calculate_rotit"
+            # print np.array([[self.cos(p1, p2), -self.sin(p1, p2)], [self.sin(p1, p2), self.cos(p1, p2)]])
             print_rotit = True
         return np.array([[self.cos(p1, p2), -self.sin(p1, p2)], [self.sin(p1, p2), self.cos(p1, p2)]])
 
@@ -166,8 +164,8 @@ class PassProbability:
     def calculate_muit(self, sec1, sec2):
         global print_muit
         if not print_muit:
-            print "calculate_muit"
-            print np.array([sec1[X] + (sec1[SPEED][0] / 2), sec1[Y] + ((sec1[SPEED][1]) / 2)])
+            # print "calculate_muit"
+            # print np.array([sec1[X] + (sec1[SPEED][0] / 2), sec1[Y] + ((sec1[SPEED][1]) / 2)])
             print_muit = True
         return np.array([sec1[X] + (sec1[SPEED][0] / 2), sec1[Y] + ((sec1[SPEED][1]) / 2)])
 
@@ -180,11 +178,9 @@ class PassProbability:
     #     off_players = [x[NAME] for x in filter(lambda x: x[0] == 3, self.data[0])]
     #     self.off_players_data_at_sec = [[filter(lambda x: x[NAME] == z, y)[0] for y in self.data[sec:sec+2]] for z in off_players]
 
-    def initialize(self):
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
-                self.results[i][j] = (x - ball_x) / 4000
+    def initialize(self, ref_p):
+        ball_x = self.ball_pos_dict[self.data[0][0][SEC]][0]
+        self.result += (ref_p[0] - ball_x) / 4000
 
     def add_defensive_players(self, ref_p):
         for c, player in enumerate(self.def_players_data_at_sec):
@@ -209,20 +205,18 @@ class PassProbability:
             # sec1[SPEED] = (sec1_speed_x ** 2 + sec1_speed_y ** 2) ** 0.5
             sec1[SPEED] = [sec1_speed_x, sec1_speed_y]
             printt = True
-            for i, x in enumerate(self.X_RANGE):
-                for j, y in enumerate(self.Y_RANGE):
-                    self.results[i][j] -= self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3, printt=printt)
-                    printt = False
+            self.result = 1 - self.calculate_influence(sec1, sec2, ref_p=ref_p, factor=0.3, printt=printt)
+            printt = False
             # if c>0:
             #     break
 
-    def normalize(self):
-        maxx = np.max(self.results)
-        minn = np.min(self.results)
-
-        for i, x in enumerate(self.X_RANGE):
-            for j, y in enumerate(self.Y_RANGE):
-                self.results[i][j] = (self.results[i][j] - minn) / (maxx - minn)
+    # def normalize(self):
+    #     maxx = np.max(self.results)
+    #     minn = np.min(self.results)
+    #
+    #     for i, x in enumerate(self.X_RANGE):
+    #         for j, y in enumerate(self.Y_RANGE):
+    #             self.results[i][j] = (self.results[i][j] - minn) / (maxx - minn)
 
     def show(self, prep_results=None, sec=None):
         if prep_results is not None:
@@ -262,8 +256,8 @@ class PassProbability:
         # self.get_offense_positions(showed_sec)
         # self.initialize()
         self.add_defensive_players(ref_p)
-        self.normalize()
-        return self.results
+        # self.normalize()
+        return self.result
         # self.show()
 
 #

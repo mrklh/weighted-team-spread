@@ -76,8 +76,7 @@ class Sqls:
         WHERE p.MATCH_ID = m.ID AND
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
-              (HOME_ID = 3 AND AWAY_ID = 105)
-              AND m.SEASON_ID = 11075
+              m.SEASON_ID = 11075
         GROUP BY(p.MATCH_ID) ORDER BY m.MATCH_DATE DESC
     """
 
@@ -113,4 +112,5 @@ class Sqls:
 
     GET_SPRINT_DATA = """
     select e.* from curr_hirsprint_data_exp e, tf_match m where e.MATCH_ID = m.ID and m.ID = %d and IS_SPRINT=1
+    and e.JERSEY_NUMBER != 0 and e.JERSEY_NUMBER IS NOT NULL
     """
