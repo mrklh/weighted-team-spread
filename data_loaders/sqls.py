@@ -114,3 +114,9 @@ class Sqls:
     select e.* from curr_hirsprint_data_exp e, tf_match m where e.MATCH_ID = m.ID and m.ID = %d and IS_SPRINT=1
     and e.JERSEY_NUMBER != 0 and e.JERSEY_NUMBER IS NOT NULL
     """
+
+    GET_ROSTERS_OF_TEAMS = """
+    select p.NAME, p.SURNAME, r.JERSEY_NUMBER, r.TEAM_ID, count(1) from tf_roster r, tf_match m, td_player p where r.MATCH_ID = m.ID and m.SEASON_ID = 11075 and r.PLAYER_ID = p.ID 
+    group by p.NAME, p.SURNAME, r.JERSEY_NUMBER, r.TEAM_ID
+    order by r.TEAM_ID, r.JERSEY_NUMBER
+    """

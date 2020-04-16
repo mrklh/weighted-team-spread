@@ -4,8 +4,10 @@ import mysql.connector
 
 
 class MySqlConnection:
-    def __init__(self):
-        with open('data_loaders/.db.config') as f:
+    def __init__(self, path=""):
+        if not path:
+            path = 'data_loaders/.db.config'
+        with open(path) as f:
             config = f.readlines()
 
         self.cnx = mysql.connector.connect(user=config[0].split('=')[1][:-1],

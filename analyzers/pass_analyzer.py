@@ -26,7 +26,6 @@ class PassAnalyzer:
 
         if player1 and player2:
             team_data[player1][player2] += 1
-            team_data[player2][player1] += 1
 
     def generate_pass_matrices(self):
         for c, team in enumerate(self.p2p_dicts):
