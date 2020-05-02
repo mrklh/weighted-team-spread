@@ -21,7 +21,7 @@ class Validator:
             for game in self.conn.get_cursor():
                 self.games.append(game)
 
-            # self.pkl_loader.dump_data(self.games)
+            self.pkl_loader.dump_data(self.games)
 
     def return_games(self):
         self.get_game_info()

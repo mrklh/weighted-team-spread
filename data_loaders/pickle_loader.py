@@ -14,5 +14,6 @@ class PickleLoader:
         return self.data
 
     def dump_data(self, data):
+        print "Game dumped"
         with open(self.filename, "wb+") as f:
             pickle.dump(data, f)
