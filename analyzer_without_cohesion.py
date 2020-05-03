@@ -1,33 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import pickle
-import pprint
+import os
+import sys
 import traceback
-from asynchat import simple_producer
+import psutil
+import pprint
+import datetime
 
-import numpy as np
+import matplotlib.pyplot as plt
 
 from data_loaders.get_a_game_data import GameData
-from data_loaders.get_a_game_ball_data import BallData
-# from pitch_value import PitchValue
-from analyzers.closeness_analyzer import ClosenessAnalyzer
-from analyzers.marking_analyzer import MarkingAnalyzer
-from analyzers.pass_analyzer import PassAnalyzer
 from plotters.matrix_plotter import MatrixPlotter
 from validator import Validator
 from match_statistics import MatchStatistics
 from data_loaders.pickle_loader import PickleLoader
-from plotters.pitch_plotter import PitchPlotter
-from data_loaders.db_data_collector import DbDataCollector
-from commons import Commons
 from usable_high_value_area_with_range import UHVA
 from data_loaders.sqls import Sqls
 from data_loaders.mine_sql_connection import MySqlConnection
-
-import pprint
-
-import matplotlib.pyplot as plt
-import datetime
+from custom_utils.memory_profile import get_size
 
 S_TEAM_ID = 2
 S_JERSEY = 3
@@ -114,6 +105,9 @@ class Analyzer:
                 print self.tag, '%s: %.2f secs' % (self.pref, end - start)
 
             return func_wrapper
+
+    def print_size(self):
+        print "Size of analyzer: %.2f MB" % (get_size(self)/2.**20)
 
     def get_matrices_pickled(self):
         data = self.pickle_loader.return_data()
@@ -331,8 +325,13 @@ if __name__ == "__main__":
     just_home = True
     midway = True
 
+    pid = os.getpid()
+    py = psutil.Process(pid)
+
     for cnt, game in enumerate(games):
         print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+        memoryUse = py.memory_info()[0] / 2. ** 30
+        print "Current memory usage: %.2f GB" % memoryUse
         print '%d of %s games' % (cnt + 1, len(games.keys()))
         try:
             sprint_dict = {}
@@ -344,6 +343,7 @@ if __name__ == "__main__":
             print '#' * 49
             analyzer = Analyzer(games[game])
             ms = MatchStatistics(analyzer)
+            analyzer.print_size()
 
             pickled_data = analyzer.pickle_loader.return_data()
             if pickled_data:
@@ -368,6 +368,7 @@ if __name__ == "__main__":
             for spc, sprint in enumerate(sprint_data):
                 if spc and not spc % 15:
                     print "[GAME-%d] Iteration [%d]" % (game, spc)
+                    break
                 sprint_time = 10000 * sprint[S_HALF] + 100 * sprint[S_MIN] + sprint[S_SEC]
 
                 if sprint[S_SEC] == 59:
@@ -430,6 +431,7 @@ if __name__ == "__main__":
                                                                                  missing_data,
                                                                                  defender_sprint,
                                                                                  ball_position)
+            analyzer.print_size()
         except Exception, e:
             print "PROBLEM IN", games[game]['home']['name'], games[game]['away']['name'], "GAME."
             print e
