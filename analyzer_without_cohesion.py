@@ -328,7 +328,17 @@ if __name__ == "__main__":
     pid = os.getpid()
     py = psutil.Process(pid)
 
+    processed = 0
+
     for cnt, game in enumerate(games):
+        if processed == 70:
+            break
+
+        if os.path.exists("plots/%d" % game):
+            print "[GAME-%d] Already processed. Passing..." % game
+            continue
+
+        processed += 1
         print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
         memoryUse = py.memory_info()[0] / 2. ** 30
         print "Current memory usage: %.2f GB" % memoryUse
@@ -368,7 +378,6 @@ if __name__ == "__main__":
             for spc, sprint in enumerate(sprint_data):
                 if spc and not spc % 15:
                     print "[GAME-%d] Iteration [%d]" % (game, spc)
-                    break
                 sprint_time = 10000 * sprint[S_HALF] + 100 * sprint[S_MIN] + sprint[S_SEC]
 
                 if sprint[S_SEC] == 59:
@@ -432,6 +441,9 @@ if __name__ == "__main__":
                                                                                  defender_sprint,
                                                                                  ball_position)
             analyzer.print_size()
+            del uhva
+            del ms
+            del analyzer
         except Exception, e:
             print "PROBLEM IN", games[game]['home']['name'], games[game]['away']['name'], "GAME."
             print e

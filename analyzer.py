@@ -20,7 +20,9 @@ from data_loaders.pickle_loader import PickleLoader
 from plotters.pitch_plotter import PitchPlotter
 from data_loaders.db_data_collector import DbDataCollector
 from commons import Commons
-from usable_high_value_area import UHVA
+from usable_high_value_area_with_range import UHVA
+from data_loaders.sqls import Sqls
+from data_loaders.mine_sql_connection import MySqlConnection
 
 import pprint
 
@@ -133,9 +135,9 @@ class Analyzer:
         self.events = self.game_data_collector.events
         self.team_ids = [self.teams[0].id, self.teams[1].id]
         self.set_keys()
-        if analyzer.pickled:
-            return
-        self.closeness_analyzer = ClosenessAnalyzer(self)
+        # if analyzer.pickled:
+        #     return
+        # self.closeness_analyzer = ClosenessAnalyzer(self)
 
     @RunFuncWithTimer('Passes')
     def calculate_passes(self):
@@ -395,59 +397,35 @@ if __name__ == "__main__":
             analyzer.game_data_collector = GameData(get_type='Multiple', game=games[game])
             analyzer.ball_data_collector = BallData(get_type='Multiple', game=games[game])
 
-            analyzer.closeness_matrices, analyzer.pass_matrices, analyzer.marking_matrices = analyzer.get_matrices_pickled()
+            analyzer.closeness_matrices, analyzer.pass_matrices, analyzer.marking_matrices = \
+                analyzer.get_matrices_pickled()
+
             if not analyzer.pickled:
                 analyzer.calculate_closeness()
-                analyzer.calculate_passes()
-                analyzer.calculate_marking()
-                # analyzer.save_weights()
-            else:
-                # analyzer.calculate_closeness()
-                analyzer.calculate_passes()
-
-            # pv = PitchValue(analyzer)
-            # pv.plot_pitch_with_values()
-
-            # importance_list = []
-            # for i in range(0, 2):
-            #     players = analyzer.game_data_collector.db_data[i].get_player_names()
-            #     cls = Commons.dict_to_matrix(analyzer.closeness_analyzer.p2p_dicts[i], players)
-            #     mrk = Commons.dict_to_matrix(analyzer.marking_analyzer.p2p_dicts[i], players)
-            #     pss = Commons.dict_to_matrix(analyzer.pass_p2p_dicts[i], players)
-            #
-            #     importance = cls + mrk + pss
-            #     importance_list.append([sum(importance[c]) for c, p in enumerate(players)])
-            from data_loaders.sqls import Sqls
-            from data_loaders.mine_sql_connection import MySqlConnection
-
-            conn = MySqlConnection()
-            conn.execute_query(Sqls.GET_FIRST_ELEVEN % game)
-            first_eleven = conn.get_cursor().fetchall()
-            analyzer.team_names = [x[1] for x in first_eleven]
-            analyzer.nums = [x[0] for x in first_eleven]
-            analyzer.jersey = {x[1]: x[0] for x in first_eleven}
-
-            # if not cnt:
-            #     team_names = Commons.bjk_kon
+            #     analyzer.calculate_passes()
+            #     analyzer.calculate_marking()
+            #     # analyzer.save_weights()
             # else:
-            #     team_names = Commons.bjk_bsk
-
-            if games[game]['home']['id'] == 3:
-                index = 0
-            else:
-                index = 1
-            analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.p2p_dicts[index])
-            analyzer.matrix_plotter.set_keys(analyzer.team_names)
-            analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.p2p_dicts[index])
-            analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.p2p_dicts[index])
-            print '#' * 49
-            print '#' * 49
-            pprint.pprint(games[game]['home']['id'])
-            pprint.pprint(Commons.teams[games[game]['home']['id']])
-            print '#' * 49
-            print '#' * 49
-            analyzer.matrix_plotter.game_name = Commons.teams[games[game]['home']['id']] + "_" + \
-                                                Commons.teams[games[game]['away']['id']]
+            #     analyzer.calculate_passes()
+            #
+            conn = MySqlConnection()
+            # conn.execute_query(Sqls.GET_FIRST_ELEVEN % game)
+            # first_eleven = conn.get_cursor().fetchall()
+            # analyzer.team_names = [x[1] for x in first_eleven]
+            # analyzer.nums = [x[0] for x in first_eleven]
+            # analyzer.jersey = {x[1]: x[0] for x in first_eleven}
+            #
+            # if games[game]['home']['id'] == 3:
+            #     index = 0
+            # else:
+            #     index = 1
+            # analyzer.matrix_plotter.set_closeness_matrix(analyzer.closeness_analyzer.p2p_dicts[index])
+            # analyzer.matrix_plotter.set_keys(analyzer.team_names)
+            # analyzer.matrix_plotter.set_pass_matrix(analyzer.pass_analyzer.p2p_dicts[index])
+            # analyzer.matrix_plotter.set_marking_matrix(analyzer.marking_analyzer.p2p_dicts[index])
+            #
+            # analyzer.matrix_plotter.game_name = Commons.teams[games[game]['home']['id']] + "_" + \
+            #                                     Commons.teams[games[game]['away']['id']]
 
             # analyzer.matrix_plotter.plot_pass_network(analyzer)
             # analyzer.matrix_plotter.plot(id=cnt)
@@ -455,10 +433,10 @@ if __name__ == "__main__":
             # analyzer.matrix_plotter.set_scatter(scatter)
             # analyzer.matrix_plotter.plot_scatter(importance_list)
             # continue
-            analyzer.create_2d_arrays_of_cohesions()
-            mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
-            ms.print_ms()
-            ms.set_sec_keys_of_ball_data()
+            # analyzer.create_2d_arrays_of_cohesions()
+            # mh, mh_w, ma, ma_w, nh_x, nh_y, na_x, na_y = analyzer.calculate_average_team_length(ms)
+            # ms.print_ms()
+            # ms.set_sec_keys_of_ball_data()
             # ms.dist_plotter()
             # ms.scenario_plotter(just_home, midway)
             # ms.trace_game_events()

@@ -77,7 +77,7 @@ class Sqls:
               t2.ID = m.AWAY_ID AND
               t1.ID = m.HOME_ID AND
               m.SEASON_ID = 11075
-        GROUP BY(p.MATCH_ID) ORDER BY m.MATCH_DATE DESC LIMIT 20
+        GROUP BY(p.MATCH_ID) ORDER BY m.MATCH_DATE DESC
     """
 
     GET_TEAM_LENGTH_DATA = """

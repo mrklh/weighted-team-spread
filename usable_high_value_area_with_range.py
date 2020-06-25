@@ -184,6 +184,38 @@ class UHVA:
         if not os.path.exists("plots/%d" % game):
             os.mkdir("plots/%d" % game)
         plt.savefig("plots/%d/uhva_%d_%.2f.png" % (game, spc, value), bbox_inches='tight')
+        plt.close()
 
+    def temp_show(self, def_players, off_players, uhva, value=0.0, sprint=None):
+        fig, axs = plt.subplots(1, 1, figsize=(14, 6))
+        plt.plot(5, 5, 20, 20, color='red', linewidth=5)
+        plt.axis('off')
 
-uhva = UHVA(1, [], [])
+        im = axs.imshow(uhva, extent=[0, 110, 0, 68])
+        plt.colorbar(im)
+        img = plt.imread("resources/pitch.png")
+        axs.imshow(img, extent=[0, 110, 0, 68], alpha=0.6)
+
+        for player in def_players:
+            x1, y1 = self.pv.get_xy(player[0])
+            x2, y2 = self.pv.get_xy(player[1])
+            axs.scatter(x1, y1, c='orange', s=100)
+            axs.scatter(x2, y2, c='red', s=100)
+
+        for player in off_players:
+            x1, y1 = self.pv.get_xy(player[0])
+            x2, y2 = self.pv.get_xy(player[1])
+            axs.scatter(x1, y1, c='yellow', s=100)
+            axs.scatter(x2, y2, c='green', s=100)
+
+        axs.scatter(sprint[S_BEGIN_X], sprint[S_BEGIN_Y], c='purple', s=150)
+        axs.scatter(sprint[S_END_X], sprint[S_END_Y], c='cyan', s=150)
+
+        # ball_pos = PitchValue.to21_array(self.pv.ball_pos_dict[off_players[0][0][SEC]])
+        # axs.scatter(ball_pos[0][0], ball_pos[1][0], c='white', s=100)
+        plt.title("Value: %.3f" % value)
+
+        plt.show()
+        plt.close()
+
+# uhva = UHVA(1, [], [])
